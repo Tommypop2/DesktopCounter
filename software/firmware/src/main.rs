@@ -68,11 +68,11 @@ async fn main(spawner: embassy_executor::Spawner) {
 
 	let mut buf = [0u8; 10];
 	loop {
+		let value = read_count();
 		display.clear_buffer();
 		Text::with_baseline("Death Toll", Point::zero(), text_style, Baseline::Top)
 			.draw(&mut display)
 			.unwrap();
-		let value = read_count();
 		Text::with_baseline(
 			format_no_std::show(&mut buf, format_args!("{}", value)).unwrap(),
 			Point::new(0, 20),
