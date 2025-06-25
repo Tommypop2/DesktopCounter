@@ -1,0 +1,29 @@
+[package]
+name = "item-death-toll-firmware"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+embassy-executor = { version = "0.7", features = ["task-arena-size-20480"] }
+embassy-sync = "0.7.0"
+embassy-time = "0.4.0"
+embedded-graphics = "0.8.1"
+esp-backtrace = { version = "0.15.0", features = [
+	"esp32c3",
+	"exception-handler",
+	"panic-handler",
+	"println",
+] }
+esp-hal = { version = "1.0.0-beta.1", features = ["esp32c3", "unstable"] }
+esp-hal-embassy = { version = "0.8.1", features = ["esp32c3"] }
+esp-hal-smartled = { version = "0.15.0", features = ["esp32c3"] }
+esp-println = { version = "0.13.0", features = ["esp32c3", "log"] }
+format_no_std = "1.2.0"
+smart-leds = "0.4.0"
+ssd1306 = { version = "0.10.0", features = ["async"] }
+
+[profile.release]
+codegen-units = 1
+opt-level = 3
+lto = 'fat'
+overflow-checks = false
