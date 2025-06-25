@@ -11,7 +11,7 @@ pub fn write_count(x: u32) {
 }
 
 pub fn increase_count(x: i32) {
-	let new = read_count() as i32 + x;
+	let new = (read_count() as i32).wrapping_add(x);
 	if new < 0 {
 		return;
 	}

@@ -14,11 +14,26 @@ use smart_leds::{
 };
 
 use crate::maths::sin;
-
+struct FibonacciWrapped {
+	num1: u8,
+	num2: u8,
+}
+impl FibonacciWrapped {
+	pub fn new() -> Self {
+		Self { num1: 0, num2: 1 }
+	}
+	pub fn next(&mut self) -> u8 {
+		let next = self.num1.wrapping_add(self.num2);
+		self.num1 = self.num2;
+		self.num2 = next;
+		next
+	}
+}
 pub enum RgbMode {
 	SineCycle(f64),
 	Discrete(u64),
 	Random(u64),
+	Fibonacci(u64),
 }
 pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::SineCycle(0.4));
 #[embassy_executor::task]
@@ -30,6 +45,7 @@ pub async fn handle_neopixel(
 	let mut neopixel = { SmartLedsAdapterAsync::new(rmt_channel, pin, smart_led_buffer!(1)) };
 	let level = 10;
 	let mut rng = Rng::new(rng);
+	let mut fib = FibonacciWrapped::new();
 	loop {
 		let colour = match *RGB_MODE.lock().await {
 			RgbMode::SineCycle(angular_freq) => {
@@ -54,6 +70,15 @@ pub async fn handle_neopixel(
 				Timer::after_millis(delay).await;
 				let colour = Hsv {
 					hue: (rng.random() / 257) as u8,
+					sat: 255,
+					val: 255,
+				};
+				hsv2rgb(colour)
+			}
+			RgbMode::Fibonacci(delay) => {
+				Timer::after_millis(delay).await;
+				let colour = Hsv {
+					hue: fib.next(),
 					sat: 255,
 					val: 255,
 				};
