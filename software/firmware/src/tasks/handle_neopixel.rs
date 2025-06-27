@@ -9,7 +9,7 @@ use esp_hal::{
 };
 use esp_hal_smartled::{SmartLedsAdapterAsync, smart_led_buffer};
 use smart_leds::{
-	SmartLedsWriteAsync as _, brightness,
+	RGB8, SmartLedsWriteAsync as _, brightness,
 	hsv::{Hsv, hsv2rgb},
 };
 
@@ -29,13 +29,26 @@ impl FibonacciWrapped {
 		next
 	}
 }
+#[derive(Clone)]
 pub enum RgbMode {
 	SineCycle(f64),
 	Discrete(u64),
 	Random(u64),
 	Fibonacci(u64),
+	Static(RGB8),
 }
 pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::SineCycle(0.4));
+pub async fn temporarily_set_mode<F: Future>(future: F) -> F::Output {
+	let previous_mode: RgbMode;
+	{
+		let mut mode = RGB_MODE.lock().await;
+		previous_mode = mode.clone();
+		*mode = RgbMode::Static(RGB8::new(255, 255, 255));
+	}
+	let v = future.await;
+	*RGB_MODE.lock().await = previous_mode;
+	v
+}
 #[embassy_executor::task]
 pub async fn handle_neopixel(
 	rmt_channel: ChannelCreator<Async, 0>,
@@ -46,6 +59,7 @@ pub async fn handle_neopixel(
 	let level = 10;
 	let mut rng = Rng::new(rng);
 	let mut fib = FibonacciWrapped::new();
+	let mut prev_colour = RGB8::new(0, 0, 0);
 	loop {
 		let colour = match *RGB_MODE.lock().await {
 			RgbMode::SineCycle(angular_freq) => {
@@ -84,8 +98,15 @@ pub async fn handle_neopixel(
 				};
 				hsv2rgb(colour)
 			}
+			RgbMode::Static(colour) => colour,
 		};
-
+		// Diff the colour (don't write to neopixel if the colour is the same as the previous colour)
+		if prev_colour == colour {
+			embassy_futures::yield_now().await;
+			// Timer::after_millis(10).await;
+			continue;
+		}
+		prev_colour = colour;
 		neopixel
 			.write(brightness([colour].into_iter(), level))
 			.await
