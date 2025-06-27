@@ -29,6 +29,8 @@ format_no_std = "1.2.0"
 futures = { version = "0.3.31", default-features = false }
 smart-leds = "0.4.0"
 ssd1306 = { version = "0.10.0", features = ["async"] }
+strum = { version = "0.27.1", default-features = false }
+strum_macros = "0.27.1"
 
 [profile.release]
 codegen-units = 1

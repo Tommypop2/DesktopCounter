@@ -10,8 +10,8 @@ use crate::tasks::handle_neopixel::handle_neopixel;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
 use embassy_time::Timer;
-use embedded_graphics::Drawable;
 use embedded_graphics::mono_font::iso_8859_9::FONT_10X20;
+use embedded_graphics::{Drawable, text};
 use embedded_graphics::{
 	mono_font::MonoTextStyleBuilder,
 	pixelcolor::BinaryColor,
@@ -26,6 +26,7 @@ use esp_hal::{
 	timer::timg::TimerGroup,
 };
 
+use ssd1306::size::{DisplaySize, DisplaySizeAsync};
 use ssd1306::{
 	I2CDisplayInterface, Ssd1306Async, mode::DisplayConfigAsync, prelude::DisplayRotation,
 	size::DisplaySize128x64,
@@ -109,26 +110,103 @@ async fn main(spawner: embassy_executor::Spawner) {
 			}
 			State::Menu(menu_state) => match menu_state {
 				MenuState::Main => {
-					let submenus = &[MenuState::RgbMode];
-					display.clear_buffer();
-					Text::with_baseline("Menu!!", Point::zero(), text_style, Baseline::Top)
-						.draw(&mut display)
-						.unwrap();
-					display.flush().await.unwrap();
-					match BUTTON_STATE.wait().await {
-						ButtonEvent::Press => {
-							// increment_count();
-						}
-						ButtonEvent::HoldHalfSecond => {
-							// decrement_count();
-						}
-						ButtonEvent::HoldFullSecond => {
-							*MENU_STATE.lock().await = State::DeathToll;
-						}
+					let submenus = &[
+						MenuState::RgbMode,
+						MenuState::Test1,
+						MenuState::Test2,
+						MenuState::Test3,
+					];
+					if let Some(option) =
+						render_menu(submenus, &mut display, &mut buf, text_style).await
+					{
+						*MENU_STATE.lock().await = State::Menu(option)
 					}
 				}
-				MenuState::RgbMode => {}
+				MenuState::RgbMode => {
+					
+				}
+				MenuState::Test1 => {}
+				MenuState::Test2 => {}
+				MenuState::Test3 => {}
 			},
+		}
+	}
+}
+async fn render_menu<'a, T: Clone + Into<&'a str>>(
+	items: &[T],
+	display: &mut Ssd1306Async<
+		ssd1306::prelude::I2CInterface<i2c::master::I2c<'_, esp_hal::Async>>,
+		DisplaySize128x64,
+		ssd1306::mode::BufferedGraphicsModeAsync<DisplaySize128x64>,
+	>,
+	text_buf: &mut [u8],
+	text_style: embedded_graphics::mono_font::MonoTextStyle<'_, BinaryColor>,
+) -> Option<T> {
+	let mut i: i8 = 0;
+	// Current value should be rendered in the middle with a <
+	loop {
+		let previous_value = items[{
+			let index = i - 1;
+			if index < 0 {
+				items.len() as i8 + index
+			} else {
+				index
+			}
+		} as usize]
+			.clone();
+		let current_value = items[i as usize].clone();
+		let next_value = items[{
+			let index = i + 1;
+			if index >= items.len() as i8 {
+				index - items.len() as i8
+			} else {
+				index
+			}
+		} as usize]
+			.clone();
+
+		display.clear_buffer();
+		Text::with_baseline(
+			previous_value.into(),
+			Point::zero(),
+			text_style,
+			Baseline::Top,
+		)
+		.draw(display)
+		.unwrap();
+		Text::with_baseline(
+			format_no_std::show(
+				text_buf,
+				format_args!("{} <", <T as Into<&str>>::into(current_value)),
+			)
+			.unwrap(),
+			Point::new(0, 20),
+			text_style,
+			Baseline::Top,
+		)
+		.draw(display)
+		.unwrap();
+		Text::with_baseline(
+			next_value.into(),
+			Point::new(0, 40),
+			text_style,
+			Baseline::Top,
+		)
+		.draw(display)
+		.unwrap();
+		display.flush().await.unwrap();
+		match BUTTON_STATE.wait().await {
+			ButtonEvent::Press => {
+				i += 1;
+				if i >= items.len() as i8 {
+					i = 0
+				}
+			}
+			ButtonEvent::HoldHalfSecond => return Some(items[i as usize].clone()),
+			ButtonEvent::HoldFullSecond => {
+				*MENU_STATE.lock().await = State::DeathToll;
+				return None;
+			}
 		}
 	}
 }

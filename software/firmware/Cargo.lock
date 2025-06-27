@@ -846,6 +846,8 @@ dependencies = [
  "futures",
  "smart-leds",
  "ssd1306",
+ "strum",
+ "strum_macros",
 ]
 
 [[package]]

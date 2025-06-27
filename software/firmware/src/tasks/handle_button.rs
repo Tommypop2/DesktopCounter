@@ -17,7 +17,7 @@ use crate::{
 };
 
 pub static BUTTON_STATE: Signal<CriticalSectionRawMutex, ButtonEvent> = Signal::new();
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ButtonEvent {
 	Press,
 	HoldHalfSecond,
@@ -37,7 +37,7 @@ pub async fn handle_button(led_pin: GPIO3<'static>, button_pin: GPIO8<'static>) 
 		let res = select(wait_for_high, Timer::after_millis(500)).await;
 		match res {
 			futures::future::Either::Left((_value1, _future2)) => {
-				esp_println::dbg!("Left");
+				// esp_println::dbg!("Left");
 			}
 			futures::future::Either::Right((_value2, button_release)) => {
 				// In this case, the button is being held, so set colour and wait for release
@@ -59,7 +59,7 @@ pub async fn handle_button(led_pin: GPIO3<'static>, button_pin: GPIO8<'static>) 
 					}
 				}
 				*RGB_MODE.lock().await = previous_mode;
-				esp_println::dbg!("Right");
+				// esp_println::dbg!("Right");
 			}
 		}
 		// button.wait_for_high().await;
@@ -79,8 +79,8 @@ pub async fn handle_button(led_pin: GPIO3<'static>, button_pin: GPIO8<'static>) 
 		} else {
 			continue;
 		};
+		esp_println::dbg!("Button Press: ", &button_event);
 		BUTTON_STATE.signal(button_event);
-		// esp_println::dbg!("Button Registered", &button_event);
 		// match button_event {
 		// 	ButtonEvent::Press => increment_count(),
 		// 	ButtonEvent::Hold => decrement_count(),
