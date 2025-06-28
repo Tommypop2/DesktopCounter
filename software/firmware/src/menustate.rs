@@ -39,23 +39,24 @@ pub static MAIN_MENU: Menu<'static> = Menu::new(
 		Menu::new(
 			"RGB Mode",
 			Either::Second(&[
-				MenuResult::RgbMode(RgbMode::SineCycle(0.4)),
-				MenuResult::RgbMode(RgbMode::Discrete(400)),
-				MenuResult::RgbMode(RgbMode::Random(400)),
-				MenuResult::RgbMode(RgbMode::Fibonacci(400)),
+				MenuResult::RgbMode(RgbMode::SineCycle(0.01)),
+				MenuResult::RgbMode(RgbMode::Continuous(1)),
+				MenuResult::RgbMode(RgbMode::Random(1)),
+				MenuResult::RgbMode(RgbMode::Fibonacci(1)),
 			]),
 		),
 		Menu::new(
 			"Brightness",
 			Either::Second(&RgbBrightness::map_to_menu_result()),
 		),
-		Menu::new("RGB Rate", Either::Second(&[])),
+		Menu::new("RGB Rate", Either::Second(&RgbRate::map_to_menu_result())),
 	]),
 );
 #[derive(Debug, Clone)]
 pub enum MenuResult {
 	RgbMode(RgbMode),
 	RgbBrightness(RgbBrightness),
+	RgbRate(RgbRate),
 }
 #[derive(Debug, Clone, Copy, IntoStaticStr, VariantArray)]
 pub enum RgbBrightness {
@@ -64,14 +65,16 @@ pub enum RgbBrightness {
 	High = 200,
 	Max = 255,
 }
-
+#[derive(Debug, Clone, Copy, IntoStaticStr, VariantArray)]
 pub enum RgbRate {
 	VerySlow = 1,
-	Slow = 2,
-	Moderate = 3,
-	Fast = 4,
-	VeryFast = 5,
+	Slow = 3,
+	Moderate = 7,
+	Fast = 20,
+	VeryFast = 55,
 }
+
+/// Nasty macro that allows for a constant mapping of `T` to `MenuResult<T>`
 macro_rules! implement_map_to_menu_result {
 	($x:ident) => {
 		impl $x {
@@ -79,7 +82,7 @@ macro_rules! implement_map_to_menu_result {
 				let mut s = [const { MaybeUninit::<MenuResult>::uninit() }; $x::VARIANTS.len()];
 				let mut i = 0;
 				while i < $x::VARIANTS.len() {
-					s[i].write(MenuResult::RgbBrightness($x::VARIANTS[i]));
+					s[i].write(MenuResult::$x($x::VARIANTS[i]));
 					i += 1;
 				}
 				// Safe as MaybeUnit<MenuResult> is guaranteed to have the same size and alignment as MenuResult
@@ -89,12 +92,13 @@ macro_rules! implement_map_to_menu_result {
 	};
 }
 implement_map_to_menu_result!(RgbBrightness);
-
+implement_map_to_menu_result!(RgbRate);
 impl From<MenuResult> for &'static str {
 	fn from(value: MenuResult) -> Self {
 		match value {
 			MenuResult::RgbMode(x) => x.into(),
 			MenuResult::RgbBrightness(x) => x.into(),
+			MenuResult::RgbRate(x) => x.into(),
 		}
 	}
 }

@@ -65,7 +65,6 @@ pub async fn handle_button(led_pin: GPIO3<'static>, button_pin: GPIO8<'static>) 
 		}
 		// button.wait_for_high().await;
 
-		esp_println::println!("Button released!");
 		let duration_pressed = Instant::now() - time_down;
 		led.set_low();
 		let button_event = if duration_pressed > Duration::from_ticks(25000) {

@@ -33,14 +33,14 @@ impl FibonacciWrapped {
 #[derive(Clone, Debug, IntoStaticStr)]
 pub enum RgbMode {
 	SineCycle(f64),
-	Discrete(u64),
+	Continuous(u64),
 	Random(u64),
 	Fibonacci(u64),
 	Static(RGB8),
 }
-pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::SineCycle(0.4));
+pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::Random(1));
 pub static RGB_BRIGHTNESS: Mutex<CriticalSectionRawMutex, u8> = Mutex::new(10);
-
+pub static RGB_RATE_MULTIPLIER: Mutex<CriticalSectionRawMutex, u8> = Mutex::new(1);
 #[embassy_executor::task]
 pub async fn handle_neopixel(
 	rmt_channel: ChannelCreator<Async, 0>,
@@ -52,42 +52,53 @@ pub async fn handle_neopixel(
 	let mut fib = FibonacciWrapped::new();
 	let mut prev_colour = RGB8::new(0, 0, 0);
 	loop {
-		let colour = match *RGB_MODE.lock().await {
-			RgbMode::SineCycle(angular_freq) => {
+		let rate_multiplier = { RGB_RATE_MULTIPLIER.lock().await.clone() };
+		let colour = match { RGB_MODE.lock().await.clone() } {
+			RgbMode::SineCycle(rate) => {
 				let time = Instant::now().as_micros() as f64 / 1E6;
 				let colour = Hsv {
-					hue: (sin(angular_freq * time) * 255.0) as u8,
+					hue: (sin(time * (rate * rate_multiplier as f64)) * 255.0) as u8,
 					sat: 255,
 					val: 255,
 				};
 				hsv2rgb(colour)
 			}
-			RgbMode::Discrete(rate) => {
-				let time = Instant::now().as_secs();
+			RgbMode::Continuous(rate) => {
+				let time = Instant::now().as_micros() as f64 / 1E6;
 				let colour = Hsv {
-					hue: ((time * rate) % 255) as u8,
+					hue: ((time * rate as f64 * rate_multiplier as f64) as u64 % 255) as u8,
 					sat: 255,
 					val: 255,
 				};
 				hsv2rgb(colour)
 			}
-			RgbMode::Random(delay) => {
-				Timer::after_millis(delay).await;
-				let colour = Hsv {
-					hue: (rng.random() / 257) as u8,
-					sat: 255,
-					val: 255,
-				};
-				hsv2rgb(colour)
+			RgbMode::Random(rate) => {
+				let time = Instant::now().as_millis();
+				if time % (5000 / (rate * rate_multiplier as u64)) == 0 {
+					let colour = Hsv {
+						hue: (rng.random() / 257) as u8,
+						sat: 255,
+						val: 255,
+					};
+					hsv2rgb(colour)
+				} else {
+					embassy_futures::yield_now().await;
+					continue;
+				}
 			}
-			RgbMode::Fibonacci(delay) => {
-				Timer::after_millis(delay).await;
-				let colour = Hsv {
-					hue: fib.next(),
-					sat: 255,
-					val: 255,
-				};
-				hsv2rgb(colour)
+			RgbMode::Fibonacci(rate) => {
+				let time = Instant::now().as_millis();
+				if time % (5000 / (rate * rate_multiplier as u64)) == 0 {
+					let colour = Hsv {
+						hue: fib.next(),
+						sat: 255,
+						val: 255,
+					};
+					hsv2rgb(colour)
+				} else {
+					embassy_futures::yield_now().await;
+					continue;
+				}
 			}
 			RgbMode::Static(colour) => colour,
 		};

@@ -4,7 +4,9 @@
 use crate::count::{decrement_count, increment_count, read_count};
 use crate::menustate::{MAIN_MENU, MenuResult, State};
 use crate::tasks::handle_button::{BUTTON_STATE, ButtonEvent, handle_button};
-use crate::tasks::handle_neopixel::{RGB_BRIGHTNESS, RGB_MODE, handle_neopixel};
+use crate::tasks::handle_neopixel::{
+	RGB_BRIGHTNESS, RGB_MODE, RGB_RATE_MULTIPLIER, handle_neopixel,
+};
 use embassy_futures::select::Either;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
@@ -147,11 +149,16 @@ async fn main(spawner: embassy_executor::Spawner) {
 										let value = brightness as u8;
 										*RGB_BRIGHTNESS.lock().await = value;
 									}
+									MenuResult::RgbRate(r) => {
+										let value = r as usize;
+										*RGB_RATE_MULTIPLIER.lock().await = value as u8;
+									}
 								}
-								menu_index = 0;
+								// menu_index = 0;
 								// *MENU_STATE.lock().await = State::Menu(&MAIN_MENU)
 							}
 							ButtonEvent::HoldFullSecond => {
+								menu_index = 0;
 								*MENU_STATE.lock().await = State::DeathToll;
 							}
 						}
