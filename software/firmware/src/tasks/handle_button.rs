@@ -13,7 +13,7 @@ use smart_leds::RGB8;
 
 use crate::{
 	count::{decrement_count, increment_count},
-	tasks::handle_neopixel::{RGB_MODE, RgbMode, temporarily_set_mode},
+	tasks::handle_neopixel::{RGB_MODE, RgbMode},
 };
 
 pub static BUTTON_STATE: Signal<CriticalSectionRawMutex, ButtonEvent> = Signal::new();
@@ -46,7 +46,8 @@ pub async fn handle_button(led_pin: GPIO3<'static>, button_pin: GPIO8<'static>) 
 				{
 					let mut mode = RGB_MODE.lock().await;
 					previous_mode = mode.clone();
-					*mode = RgbMode::Static(RGB8::new(255, 255, 255));
+					// "White"
+					*mode = RgbMode::Static(RGB8::new(190, 240, 255));
 				}
 				match select(button_release, Timer::after_millis(500)).await {
 					// Button released before next 0.5s
