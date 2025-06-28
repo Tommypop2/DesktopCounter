@@ -81,9 +81,5 @@ pub async fn handle_button(led_pin: GPIO3<'static>, button_pin: GPIO8<'static>) 
 		};
 		esp_println::dbg!("Button Press: ", &button_event);
 		BUTTON_STATE.signal(button_event);
-		// match button_event {
-		// 	ButtonEvent::Press => increment_count(),
-		// 	ButtonEvent::Hold => decrement_count(),
-		// }
 	}
 }

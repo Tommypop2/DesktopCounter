@@ -3,40 +3,47 @@ use strum::{Display, IntoStaticStr};
 use crate::tasks::handle_neopixel::RgbMode;
 
 #[derive(Clone, Debug, IntoStaticStr, Display)]
-pub enum MenuState {
-	/// In the main menu. Display a list of submenus
-	Main,
+pub enum MainMenuOptions {
 	// Submenus
 	RgbMode,
 	Test1,
 	Test2,
 	Test3,
 }
-impl Menu for MenuState {
-	const NUM_OPTIONS: usize = 4;
-	fn options<'a>() -> &'a [Self; Self::NUM_OPTIONS] {
-		&[
-			MenuState::RgbMode,
-			MenuState::Test1,
-			MenuState::Test2,
-			MenuState::Test3,
-		]
-	}
-	fn render(&self, index: usize) -> () {}
-}
+
 #[derive(Clone, Debug)]
-pub enum State {
+pub enum State<'a> {
 	/// Not in a menu. Display the death toll
 	DeathToll,
-	Menu(MenuState),
+	Menu(&'a Menu<'a>),
 }
 
-pub trait Menu {
-	const NUM_OPTIONS: usize;
-	fn options<'a>() -> &'a [Self; <MenuState as Menu>::NUM_OPTIONS]
-	where
-		Self: Sized;
-
+pub trait Renderable {
 	/// Renders the menu with the item at the given index selected
 	fn render(&self, index: usize) -> ();
 }
+#[derive(Clone, Debug)]
+pub struct Menu<'a> {
+	pub name: &'a str,
+	pub items: &'a [Menu<'a>],
+}
+impl<'a> Into<&'a str> for Menu<'a> {
+	fn into(self) -> &'a str {
+		self.name
+	}
+}
+impl<'a> Menu<'a> {
+	pub const fn new(name: &'a str, items: &'a [Menu<'a>]) -> Self {
+		Self { name, items }
+	}
+}
+
+pub static MAIN_MENU: Menu<'static> = Menu::new(
+	"main",
+	&[
+		Menu::new("RgbMode", &[]),
+		Menu::new("Test1", &[]),
+		Menu::new("Test2", &[]),
+		Menu::new("Test3", &[]),
+	],
+);

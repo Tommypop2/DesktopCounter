@@ -4,7 +4,7 @@
 use core::sync::atomic::AtomicU32;
 
 use crate::count::{decrement_count, increase_count, increment_count, read_count};
-use crate::menustate::{Menu, MenuState, State};
+use crate::menustate::{MAIN_MENU, Menu, State};
 use crate::tasks::handle_button::{BUTTON_STATE, ButtonEvent, handle_button};
 use crate::tasks::handle_neopixel::handle_neopixel;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
@@ -107,37 +107,29 @@ async fn main(spawner: embassy_executor::Spawner) {
 						decrement_count();
 					}
 					ButtonEvent::HoldFullSecond => {
-						*MENU_STATE.lock().await = State::Menu(MenuState::Main);
+						*MENU_STATE.lock().await = State::Menu(&MAIN_MENU);
 					}
 				}
 			}
-			State::Menu(menu_state) => match menu_state {
-				MenuState::Main => {
-					let submenus = MenuState::options();
-					render_list(submenus, menu_index, &mut display, &mut buf, text_style).await;
-					match BUTTON_STATE.wait().await {
-						ButtonEvent::Press => {
-							menu_index += 1;
-							if menu_index >= submenus.len() {
-								menu_index = 0
-							}
-						}
-						ButtonEvent::HoldHalfSecond => {
-							menu_index = 0;
-							*MENU_STATE.lock().await = State::Menu(submenus[menu_index].clone())
-						},
-						ButtonEvent::HoldFullSecond => {
-							*MENU_STATE.lock().await = State::DeathToll;
+			State::Menu(menu) => {
+				let submenus = menu.items;
+				render_list(submenus, menu_index, &mut display, &mut buf, text_style).await;
+				match BUTTON_STATE.wait().await {
+					ButtonEvent::Press => {
+						menu_index += 1;
+						if menu_index >= submenus.len() {
+							menu_index = 0
 						}
 					}
+					ButtonEvent::HoldHalfSecond => {
+						menu_index = 0;
+						*MENU_STATE.lock().await = State::Menu(&submenus[menu_index])
+					}
+					ButtonEvent::HoldFullSecond => {
+						*MENU_STATE.lock().await = State::DeathToll;
+					}
 				}
-				MenuState::RgbMode => {
-					
-				}
-				MenuState::Test1 => {}
-				MenuState::Test2 => {}
-				MenuState::Test3 => {}
-			},
+			}
 		}
 	}
 }
