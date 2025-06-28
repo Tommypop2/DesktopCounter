@@ -1,18 +1,15 @@
 #![no_std]
 #![no_main]
 
-use core::sync::atomic::AtomicU32;
-
-use crate::count::{decrement_count, increase_count, increment_count, read_count};
-use crate::menustate::{MAIN_MENU, Menu, State};
+use crate::count::{decrement_count, increment_count, read_count};
+use crate::menustate::{MAIN_MENU, MenuResult, State};
 use crate::tasks::handle_button::{BUTTON_STATE, ButtonEvent, handle_button};
-use crate::tasks::handle_neopixel::handle_neopixel;
+use crate::tasks::handle_neopixel::{RGB_BRIGHTNESS, RGB_MODE, handle_neopixel};
+use embassy_futures::select::Either;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
-use embassy_sync::watch::Watch;
-use embassy_time::Timer;
+use embedded_graphics::Drawable;
 use embedded_graphics::mono_font::iso_8859_9::FONT_10X20;
-use embedded_graphics::{Drawable, text};
 use embedded_graphics::{
 	mono_font::MonoTextStyleBuilder,
 	pixelcolor::BinaryColor,
@@ -27,7 +24,6 @@ use esp_hal::{
 	timer::timg::TimerGroup,
 };
 
-use ssd1306::size::{DisplaySize, DisplaySizeAsync};
 use ssd1306::{
 	I2CDisplayInterface, Ssd1306Async, mode::DisplayConfigAsync, prelude::DisplayRotation,
 	size::DisplaySize128x64,
@@ -76,7 +72,7 @@ async fn main(spawner: embassy_executor::Spawner) {
 		.text_color(BinaryColor::On)
 		.build();
 
-	let mut buf = [0u8; 10];
+	let mut buf = [0u8; 30];
 	let mut menu_index: usize = 0;
 	loop {
 		// Clone the value and drop the lock immediately (so it can be modified by another task)
@@ -112,21 +108,53 @@ async fn main(spawner: embassy_executor::Spawner) {
 				}
 			}
 			State::Menu(menu) => {
-				let submenus = menu.items;
-				render_list(submenus, menu_index, &mut display, &mut buf, text_style).await;
-				match BUTTON_STATE.wait().await {
-					ButtonEvent::Press => {
-						menu_index += 1;
-						if menu_index >= submenus.len() {
-							menu_index = 0
+				let items = &menu.items;
+				match items {
+					Either::First(x) => {
+						render_list(x, menu_index, &mut display, &mut buf, text_style).await;
+						match BUTTON_STATE.wait().await {
+							ButtonEvent::Press => {
+								menu_index += 1;
+								if menu_index >= x.len() {
+									menu_index = 0
+								}
+							}
+							ButtonEvent::HoldHalfSecond => {
+								*MENU_STATE.lock().await = State::Menu(&x[menu_index]);
+								menu_index = 0;
+							}
+							ButtonEvent::HoldFullSecond => {
+								*MENU_STATE.lock().await = State::DeathToll;
+							}
 						}
 					}
-					ButtonEvent::HoldHalfSecond => {
-						menu_index = 0;
-						*MENU_STATE.lock().await = State::Menu(&submenus[menu_index])
-					}
-					ButtonEvent::HoldFullSecond => {
-						*MENU_STATE.lock().await = State::DeathToll;
+					Either::Second(x) => {
+						render_list(x, menu_index, &mut display, &mut buf, text_style).await;
+						match BUTTON_STATE.wait().await {
+							ButtonEvent::Press => {
+								menu_index += 1;
+								if menu_index >= x.len() {
+									menu_index = 0
+								}
+							}
+							ButtonEvent::HoldHalfSecond => {
+								let result = x[menu_index].clone();
+								match result {
+									MenuResult::RgbMode(mode) => {
+										*RGB_MODE.lock().await = mode;
+									}
+									MenuResult::RgbBrightness(brightness) => {
+										let value = brightness as u8;
+										*RGB_BRIGHTNESS.lock().await = value;
+									}
+								}
+								menu_index = 0;
+								// *MENU_STATE.lock().await = State::Menu(&MAIN_MENU)
+							}
+							ButtonEvent::HoldFullSecond => {
+								*MENU_STATE.lock().await = State::DeathToll;
+							}
+						}
 					}
 				}
 			}
@@ -144,6 +172,9 @@ async fn render_list<'a, T: Clone + Into<&'a str>>(
 	text_buf: &mut [u8],
 	text_style: embedded_graphics::mono_font::MonoTextStyle<'_, BinaryColor>,
 ) -> () {
+	if items.len() == 0 {
+		return;
+	}
 	let i: i8 = index as i8;
 	// Current value should be rendered in the middle with a <
 	let previous_value = items[{
@@ -165,7 +196,6 @@ async fn render_list<'a, T: Clone + Into<&'a str>>(
 		}
 	} as usize]
 		.clone();
-
 	display.clear_buffer();
 	Text::with_baseline(
 		previous_value.into(),
@@ -196,17 +226,4 @@ async fn render_list<'a, T: Clone + Into<&'a str>>(
 	.draw(display)
 	.unwrap();
 	display.flush().await.unwrap();
-	// match BUTTON_STATE.wait().await {
-	// 	ButtonEvent::Press => {
-	// 		i += 1;
-	// 		if i >= items.len() as i8 {
-	// 			i = 0
-	// 		}
-	// 	}
-	// 	ButtonEvent::HoldHalfSecond => return Some(items[i as usize].clone()),
-	// 	ButtonEvent::HoldFullSecond => {
-	// 		*MENU_STATE.lock().await = State::DeathToll;
-	// 		return None;
-	// 	}
-	// }
 }
