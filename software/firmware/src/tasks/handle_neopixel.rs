@@ -12,6 +12,7 @@ use smart_leds::{
 	RGB8, SmartLedsWriteAsync as _, brightness,
 	hsv::{Hsv, hsv2rgb},
 };
+use strum::IntoStaticStr;
 
 use crate::maths::sin;
 struct FibonacciWrapped {
@@ -29,7 +30,7 @@ impl FibonacciWrapped {
 		next
 	}
 }
-#[derive(Clone)]
+#[derive(Clone, Debug, IntoStaticStr)]
 pub enum RgbMode {
 	SineCycle(f64),
 	Discrete(u64),

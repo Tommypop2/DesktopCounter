@@ -4,11 +4,12 @@
 use core::sync::atomic::AtomicU32;
 
 use crate::count::{decrement_count, increase_count, increment_count, read_count};
-use crate::menustate::{MenuState, State};
+use crate::menustate::{Menu, MenuState, State};
 use crate::tasks::handle_button::{BUTTON_STATE, ButtonEvent, handle_button};
 use crate::tasks::handle_neopixel::handle_neopixel;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
+use embassy_sync::watch::Watch;
 use embassy_time::Timer;
 use embedded_graphics::mono_font::iso_8859_9::FONT_10X20;
 use embedded_graphics::{Drawable, text};
@@ -36,6 +37,7 @@ pub mod maths;
 pub mod menustate;
 pub mod tasks;
 pub static MENU_STATE: Mutex<CriticalSectionRawMutex, State> = Mutex::new(State::DeathToll);
+
 #[esp_hal_embassy::main]
 async fn main(spawner: embassy_executor::Spawner) {
 	esp_println::logger::init_logger_from_env();
@@ -75,6 +77,7 @@ async fn main(spawner: embassy_executor::Spawner) {
 		.build();
 
 	let mut buf = [0u8; 10];
+	let mut menu_index: usize = 0;
 	loop {
 		// Clone the value and drop the lock immediately (so it can be modified by another task)
 		let value = { MENU_STATE.lock().await.clone() };
@@ -110,16 +113,22 @@ async fn main(spawner: embassy_executor::Spawner) {
 			}
 			State::Menu(menu_state) => match menu_state {
 				MenuState::Main => {
-					let submenus = &[
-						MenuState::RgbMode,
-						MenuState::Test1,
-						MenuState::Test2,
-						MenuState::Test3,
-					];
-					if let Some(option) =
-						render_menu(submenus, &mut display, &mut buf, text_style).await
-					{
-						*MENU_STATE.lock().await = State::Menu(option)
+					let submenus = MenuState::options();
+					render_list(submenus, menu_index, &mut display, &mut buf, text_style).await;
+					match BUTTON_STATE.wait().await {
+						ButtonEvent::Press => {
+							menu_index += 1;
+							if menu_index >= submenus.len() {
+								menu_index = 0
+							}
+						}
+						ButtonEvent::HoldHalfSecond => {
+							menu_index = 0;
+							*MENU_STATE.lock().await = State::Menu(submenus[menu_index].clone())
+						},
+						ButtonEvent::HoldFullSecond => {
+							*MENU_STATE.lock().await = State::DeathToll;
+						}
 					}
 				}
 				MenuState::RgbMode => {
@@ -132,8 +141,9 @@ async fn main(spawner: embassy_executor::Spawner) {
 		}
 	}
 }
-async fn render_menu<'a, T: Clone + Into<&'a str>>(
+async fn render_list<'a, T: Clone + Into<&'a str>>(
 	items: &[T],
+	index: usize,
 	display: &mut Ssd1306Async<
 		ssd1306::prelude::I2CInterface<i2c::master::I2c<'_, esp_hal::Async>>,
 		DisplaySize128x64,
@@ -141,72 +151,70 @@ async fn render_menu<'a, T: Clone + Into<&'a str>>(
 	>,
 	text_buf: &mut [u8],
 	text_style: embedded_graphics::mono_font::MonoTextStyle<'_, BinaryColor>,
-) -> Option<T> {
-	let mut i: i8 = 0;
+) -> () {
+	let i: i8 = index as i8;
 	// Current value should be rendered in the middle with a <
-	loop {
-		let previous_value = items[{
-			let index = i - 1;
-			if index < 0 {
-				items.len() as i8 + index
-			} else {
-				index
-			}
-		} as usize]
-			.clone();
-		let current_value = items[i as usize].clone();
-		let next_value = items[{
-			let index = i + 1;
-			if index >= items.len() as i8 {
-				index - items.len() as i8
-			} else {
-				index
-			}
-		} as usize]
-			.clone();
-
-		display.clear_buffer();
-		Text::with_baseline(
-			previous_value.into(),
-			Point::zero(),
-			text_style,
-			Baseline::Top,
-		)
-		.draw(display)
-		.unwrap();
-		Text::with_baseline(
-			format_no_std::show(
-				text_buf,
-				format_args!("{} <", <T as Into<&str>>::into(current_value)),
-			)
-			.unwrap(),
-			Point::new(0, 20),
-			text_style,
-			Baseline::Top,
-		)
-		.draw(display)
-		.unwrap();
-		Text::with_baseline(
-			next_value.into(),
-			Point::new(0, 40),
-			text_style,
-			Baseline::Top,
-		)
-		.draw(display)
-		.unwrap();
-		display.flush().await.unwrap();
-		match BUTTON_STATE.wait().await {
-			ButtonEvent::Press => {
-				i += 1;
-				if i >= items.len() as i8 {
-					i = 0
-				}
-			}
-			ButtonEvent::HoldHalfSecond => return Some(items[i as usize].clone()),
-			ButtonEvent::HoldFullSecond => {
-				*MENU_STATE.lock().await = State::DeathToll;
-				return None;
-			}
+	let previous_value = items[{
+		let index = i - 1;
+		if index < 0 {
+			items.len() as i8 + index
+		} else {
+			index
 		}
-	}
+	} as usize]
+		.clone();
+	let current_value = items[i as usize].clone();
+	let next_value = items[{
+		let index = i + 1;
+		if index >= items.len() as i8 {
+			index - items.len() as i8
+		} else {
+			index
+		}
+	} as usize]
+		.clone();
+
+	display.clear_buffer();
+	Text::with_baseline(
+		previous_value.into(),
+		Point::zero(),
+		text_style,
+		Baseline::Top,
+	)
+	.draw(display)
+	.unwrap();
+	Text::with_baseline(
+		format_no_std::show(
+			text_buf,
+			format_args!("{} <", <T as Into<&str>>::into(current_value)),
+		)
+		.unwrap(),
+		Point::new(0, 20),
+		text_style,
+		Baseline::Top,
+	)
+	.draw(display)
+	.unwrap();
+	Text::with_baseline(
+		next_value.into(),
+		Point::new(0, 40),
+		text_style,
+		Baseline::Top,
+	)
+	.draw(display)
+	.unwrap();
+	display.flush().await.unwrap();
+	// match BUTTON_STATE.wait().await {
+	// 	ButtonEvent::Press => {
+	// 		i += 1;
+	// 		if i >= items.len() as i8 {
+	// 			i = 0
+	// 		}
+	// 	}
+	// 	ButtonEvent::HoldHalfSecond => return Some(items[i as usize].clone()),
+	// 	ButtonEvent::HoldFullSecond => {
+	// 		*MENU_STATE.lock().await = State::DeathToll;
+	// 		return None;
+	// 	}
+	// }
 }
