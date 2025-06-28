@@ -178,8 +178,8 @@ async fn render_list<'a, T: Clone + Into<&'a str>>(
 	>,
 	text_buf: &mut [u8],
 	text_style: embedded_graphics::mono_font::MonoTextStyle<'_, BinaryColor>,
-) -> () {
-	if items.len() == 0 {
+) {
+	if items.is_empty() {
 		return;
 	}
 	let i: i8 = index as i8;

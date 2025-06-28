@@ -1,6 +1,6 @@
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
-use embassy_time::{Instant, Timer};
+use embassy_time::Instant;
 use esp_hal::{
 	Async,
 	peripherals::{GPIO5, RNG},
@@ -12,7 +12,7 @@ use smart_leds::{
 	RGB8, SmartLedsWriteAsync as _, brightness, gamma,
 	hsv::{Hsv, hsv2rgb},
 };
-use strum::{EnumDiscriminants, IntoStaticStr, VariantArray};
+use strum::IntoStaticStr;
 
 use crate::maths::sin;
 struct FibonacciWrapped {
@@ -52,8 +52,8 @@ pub async fn handle_neopixel(
 	let mut fib = FibonacciWrapped::new();
 	let mut prev_colour = RGB8::new(0, 0, 0);
 	loop {
-		let rate_multiplier = { RGB_RATE_MULTIPLIER.lock().await.clone() };
-		let colour = match { RGB_MODE.lock().await.clone() } {
+		let rate_multiplier = { *RGB_RATE_MULTIPLIER.lock().await };
+		let colour = match RGB_MODE.lock().await.clone() {
 			RgbMode::SineCycle(rate) => {
 				let time = Instant::now().as_micros() as f64 / 1E6;
 				let colour = Hsv {
@@ -109,7 +109,7 @@ pub async fn handle_neopixel(
 			continue;
 		}
 		prev_colour = colour;
-		let level = { RGB_BRIGHTNESS.lock().await.clone() };
+		let level = { *RGB_BRIGHTNESS.lock().await };
 		neopixel
 			.write(brightness(gamma([colour].into_iter()), level))
 			.await

@@ -14,7 +14,7 @@ pub enum State<'a> {
 
 pub trait Renderable {
 	/// Renders the menu with the item at the given index selected
-	fn render(&self, index: usize) -> ();
+	fn render(&self, index: usize);
 }
 type MenuItems<'a> = Either<&'a [Menu<'a>], &'a [MenuResult]>;
 #[derive(Clone, Debug)]
@@ -22,9 +22,9 @@ pub struct Menu<'a> {
 	pub name: &'a str,
 	pub items: MenuItems<'a>,
 }
-impl<'a> Into<&'a str> for Menu<'a> {
-	fn into(self) -> &'a str {
-		self.name
+impl<'a> From<Menu<'a>> for &'a str {
+	fn from(val: Menu<'a>) -> Self {
+		val.name
 	}
 }
 impl<'a> Menu<'a> {

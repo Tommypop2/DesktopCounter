@@ -1,20 +1,15 @@
 use core::pin;
 
-use embassy_futures::select::select3;
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 use embassy_time::{Duration, Instant, Timer};
-use embedded_graphics::pixelcolor::Rgb888;
 use esp_hal::{
 	gpio::{self, InputConfig, OutputConfig},
-	peripherals::{GPIO2, GPIO3, GPIO8},
+	peripherals::{GPIO3, GPIO8},
 };
 use futures::future::select;
 use smart_leds::RGB8;
 
-use crate::{
-	count::{decrement_count, increment_count},
-	tasks::handle_neopixel::{RGB_MODE, RgbMode},
-};
+use crate::tasks::handle_neopixel::{RGB_MODE, RgbMode};
 
 pub static BUTTON_STATE: Signal<CriticalSectionRawMutex, ButtonEvent> = Signal::new();
 #[derive(Debug, Clone, PartialEq)]
