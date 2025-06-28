@@ -41,7 +41,6 @@ async fn main(spawner: embassy_executor::Spawner) {
 	esp_println::logger::init_logger_from_env();
 	let peripherals = esp_hal::init(esp_hal::Config::default());
 	esp_println::println!("Init!");
-	// let mut usb_serial = UsbSerialJtag::new(peripherals.USB_DEVICE).into_async();
 
 	let timer_group_0 = TimerGroup::new(peripherals.TIMG0);
 	esp_hal_embassy::init(timer_group_0.timer0);

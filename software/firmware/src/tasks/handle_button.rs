@@ -23,17 +23,13 @@ pub async fn handle_button(led_pin: GPIO3<'static>, button_pin: GPIO8<'static>) 
 	let mut led = gpio::Output::new(led_pin, gpio::Level::Low, OutputConfig::default());
 	let mut button = gpio::Input::new(button_pin, InputConfig::default().with_pull(gpio::Pull::Up));
 	loop {
-		// Timer::after(Duration::from_millis(500)).await;
 		button.wait_for_low().await;
 		let time_down = Instant::now();
-		// esp_println::println!("Button pressed!");
 		led.set_high();
 		let wait_for_high = pin::pin!(button.wait_for_high());
 		let res = select(wait_for_high, Timer::after_millis(500)).await;
 		match res {
-			futures::future::Either::Left((_value1, _future2)) => {
-				// esp_println::dbg!("Left");
-			}
+			futures::future::Either::Left((_value1, _future2)) => {}
 			futures::future::Either::Right((_value2, button_release)) => {
 				// In this case, the button is being held, so set colour and wait for release
 
@@ -55,15 +51,12 @@ pub async fn handle_button(led_pin: GPIO3<'static>, button_pin: GPIO8<'static>) 
 					}
 				}
 				*RGB_MODE.lock().await = previous_mode;
-				// esp_println::dbg!("Right");
 			}
 		}
-		// button.wait_for_high().await;
 
 		let duration_pressed = Instant::now() - time_down;
 		led.set_low();
 		let button_event = if duration_pressed > Duration::from_ticks(25000) {
-			// esp_println::println!("Button Registered {}", duration_pressed);
 			if duration_pressed > Duration::from_millis(1000) {
 				ButtonEvent::HoldFullSecond
 			} else if duration_pressed > Duration::from_millis(500) {

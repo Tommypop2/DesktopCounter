@@ -1,3 +1,6 @@
+// Factorial
+
+
 pub const fn factorial(x: u64) -> u64 {
 	let mut result: u64 = 1;
 	let mut i: u64 = 1;
@@ -24,6 +27,11 @@ fn _sin(x: f64) -> f64 {
 		+ factorial_reciprocal(9) * x9
 }
 
+
+// Sin
+
+
+/// Computes sin(x), where x is in radians
 pub fn sin(mut x: f64) -> f64 {
 	let pi_over_2 = core::f64::consts::FRAC_PI_2;
 	// Tau is 2π
@@ -48,4 +56,25 @@ pub fn sin(mut x: f64) -> f64 {
 			// If π/2 < x <= π
 			_sin(core::f64::consts::PI - x)
 		}
+}
+
+
+// Fibonacci
+
+
+/// Fibonacci with values represented as u8s
+pub struct FibonacciWrapped {
+	num1: u8,
+	num2: u8,
+}
+impl FibonacciWrapped {
+	pub fn new() -> Self {
+		Self { num1: 0, num2: 1 }
+	}
+	pub fn next(&mut self) -> u8 {
+		let next = self.num1.wrapping_add(self.num2);
+		self.num1 = self.num2;
+		self.num2 = next;
+		next
+	}
 }

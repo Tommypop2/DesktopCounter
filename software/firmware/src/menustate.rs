@@ -65,6 +65,8 @@ pub enum RgbBrightness {
 	High = 200,
 	Max = 255,
 }
+
+/// Values roughly model an exponential curve (rounded to the nearest integer)
 #[derive(Debug, Clone, Copy, IntoStaticStr, VariantArray)]
 pub enum RgbRate {
 	VerySlow = 1,

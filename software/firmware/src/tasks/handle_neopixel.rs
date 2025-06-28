@@ -14,22 +14,11 @@ use smart_leds::{
 };
 use strum::IntoStaticStr;
 
-use crate::maths::sin;
-struct FibonacciWrapped {
-	num1: u8,
-	num2: u8,
-}
-impl FibonacciWrapped {
-	pub fn new() -> Self {
-		Self { num1: 0, num2: 1 }
-	}
-	pub fn next(&mut self) -> u8 {
-		let next = self.num1.wrapping_add(self.num2);
-		self.num1 = self.num2;
-		self.num2 = next;
-		next
-	}
-}
+use crate::{
+	maths::{FibonacciWrapped, sin},
+	menustate::RgbRate,
+};
+
 #[derive(Clone, Debug, IntoStaticStr)]
 pub enum RgbMode {
 	SineCycle(f64),
@@ -40,7 +29,8 @@ pub enum RgbMode {
 }
 pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::Random(1));
 pub static RGB_BRIGHTNESS: Mutex<CriticalSectionRawMutex, u8> = Mutex::new(10);
-pub static RGB_RATE_MULTIPLIER: Mutex<CriticalSectionRawMutex, u8> = Mutex::new(1);
+pub static RGB_RATE_MULTIPLIER: Mutex<CriticalSectionRawMutex, u8> =
+	Mutex::new(RgbRate::Moderate as u8);
 #[embassy_executor::task]
 pub async fn handle_neopixel(
 	rmt_channel: ChannelCreator<Async, 0>,
@@ -105,7 +95,6 @@ pub async fn handle_neopixel(
 		// Diff the colour (don't write to neopixel if the colour is the same as the previous colour)
 		if prev_colour == colour {
 			embassy_futures::yield_now().await;
-			// Timer::after_millis(10).await;
 			continue;
 		}
 		prev_colour = colour;
