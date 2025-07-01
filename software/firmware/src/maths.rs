@@ -63,15 +63,16 @@ pub struct FibonacciWrapped {
 	num2: u8,
 }
 impl Default for FibonacciWrapped {
-    fn default() -> Self {
-        Self::new()
-    }
+	fn default() -> Self {
+		Self::new()
+	}
 }
 
 impl FibonacciWrapped {
 	pub fn new() -> Self {
 		Self { num1: 0, num2: 1 }
 	}
+	#[allow(clippy::should_implement_trait)]
 	pub fn next(&mut self) -> u8 {
 		let next = self.num1.wrapping_add(self.num2);
 		self.num1 = self.num2;
