@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+embassy-embedded-hal = "0.3.0"
 embassy-executor = { version = "0.7", features = ["task-arena-size-20480"] }
 embassy-futures = "0.1.1"
 embassy-sync = "0.7.0"

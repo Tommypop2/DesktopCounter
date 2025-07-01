@@ -830,6 +830,7 @@ dependencies = [
 name = "item-death-toll-firmware"
 version = "0.1.0"
 dependencies = [
+ "embassy-embedded-hal",
  "embassy-executor",
  "embassy-futures",
  "embassy-sync 0.7.0",
