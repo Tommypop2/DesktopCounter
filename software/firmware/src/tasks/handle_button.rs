@@ -4,7 +4,7 @@ use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal}
 use embassy_time::{Duration, Instant, Timer};
 use esp_hal::{
 	gpio::{self, InputConfig, OutputConfig},
-	peripherals::{GPIO3, GPIO8},
+	peripherals::{GPIO2, GPIO3, GPIO8},
 };
 use futures::future::select;
 use smart_leds::RGB8;
@@ -19,7 +19,7 @@ pub enum ButtonEvent {
 	HoldFullSecond,
 }
 #[embassy_executor::task]
-pub async fn handle_button(led_pin: GPIO3<'static>, button_pin: GPIO8<'static>) {
+pub async fn handle_button(led_pin: GPIO2<'static>, button_pin: GPIO3<'static>) {
 	let mut led = gpio::Output::new(led_pin, gpio::Level::Low, OutputConfig::default());
 	let mut button = gpio::Input::new(button_pin, InputConfig::default().with_pull(gpio::Pull::Up));
 	loop {

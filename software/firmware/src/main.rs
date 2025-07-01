@@ -46,7 +46,8 @@ async fn main(spawner: embassy_executor::Spawner) {
 	esp_hal_embassy::init(timer_group_0.timer0);
 
 	spawner
-		.spawn(handle_button(peripherals.GPIO3, peripherals.GPIO8))
+		.spawn(handle_button(peripherals.GPIO2, peripherals.GPIO3
+		))
 		.unwrap();
 	let frequency = Rate::from_mhz(80);
 	let rmt = Rmt::new(peripherals.RMT, frequency)

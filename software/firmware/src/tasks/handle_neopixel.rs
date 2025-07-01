@@ -2,10 +2,7 @@ use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
 use embassy_time::Instant;
 use esp_hal::{
-	Async,
-	peripherals::{GPIO5, RNG},
-	rmt::ChannelCreator,
-	rng::Rng,
+	peripherals::{GPIO2, GPIO3, GPIO5, RNG}, rmt::ChannelCreator, rng::Rng, Async
 };
 use esp_hal_smartled::{SmartLedsAdapterAsync, smart_led_buffer};
 use smart_leds::{
@@ -27,7 +24,7 @@ pub enum RgbMode {
 	Fibonacci(u64),
 	Static(RGB8),
 }
-pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::Random(1));
+pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::SineCycle(0.01));
 pub static RGB_BRIGHTNESS: Mutex<CriticalSectionRawMutex, u8> = Mutex::new(10);
 pub static RGB_RATE_MULTIPLIER: Mutex<CriticalSectionRawMutex, u8> =
 	Mutex::new(RgbRate::Moderate as u8);
