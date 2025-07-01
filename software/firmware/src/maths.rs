@@ -1,6 +1,5 @@
 // Factorial
 
-
 pub const fn factorial(x: u64) -> u64 {
 	let mut result: u64 = 1;
 	let mut i: u64 = 1;
@@ -27,9 +26,7 @@ fn _sin(x: f64) -> f64 {
 		+ factorial_reciprocal(9) * x9
 }
 
-
 // Sin
-
 
 /// Computes sin(x), where x is in radians
 pub fn sin(mut x: f64) -> f64 {
@@ -58,15 +55,19 @@ pub fn sin(mut x: f64) -> f64 {
 		}
 }
 
-
 // Fibonacci
-
 
 /// Fibonacci with values represented as u8s
 pub struct FibonacciWrapped {
 	num1: u8,
 	num2: u8,
 }
+impl Default for FibonacciWrapped {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FibonacciWrapped {
 	pub fn new() -> Self {
 		Self { num1: 0, num2: 1 }

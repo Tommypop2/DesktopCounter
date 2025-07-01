@@ -2,7 +2,10 @@ use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
 use embassy_time::Instant;
 use esp_hal::{
-	peripherals::{GPIO2, GPIO3, GPIO5, RNG}, rmt::ChannelCreator, rng::Rng, Async
+	Async,
+	peripherals::{GPIO5, RNG},
+	rmt::ChannelCreator,
+	rng::Rng,
 };
 use esp_hal_smartled::{SmartLedsAdapterAsync, smart_led_buffer};
 use smart_leds::{

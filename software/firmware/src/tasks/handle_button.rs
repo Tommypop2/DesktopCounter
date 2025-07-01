@@ -4,7 +4,7 @@ use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal}
 use embassy_time::{Duration, Instant, Timer};
 use esp_hal::{
 	gpio::{self, InputConfig, OutputConfig},
-	peripherals::{GPIO2, GPIO3, GPIO8},
+	peripherals::{GPIO2, GPIO3},
 };
 use futures::future::select;
 use smart_leds::RGB8;

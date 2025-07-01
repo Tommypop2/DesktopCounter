@@ -46,8 +46,7 @@ async fn main(spawner: embassy_executor::Spawner) {
 	esp_hal_embassy::init(timer_group_0.timer0);
 
 	spawner
-		.spawn(handle_button(peripherals.GPIO2, peripherals.GPIO3
-		))
+		.spawn(handle_button(peripherals.GPIO2, peripherals.GPIO3))
 		.unwrap();
 	let frequency = Rate::from_mhz(80);
 	let rmt = Rmt::new(peripherals.RMT, frequency)
@@ -88,7 +87,7 @@ async fn main(spawner: embassy_executor::Spawner) {
 					.draw(&mut display)
 					.unwrap();
 				Text::with_baseline(
-					format_no_std::show(&mut buf, format_args!("{}", value)).unwrap(),
+					format_no_std::show(&mut buf, format_args!("{value}")).unwrap(),
 					Point::new(0, 20),
 					text_style,
 					Baseline::Top,
