@@ -844,6 +844,7 @@ dependencies = [
  "esp-storage",
  "format_no_std",
  "futures",
+ "sequential-storage",
  "smart-leds",
  "ssd1306",
  "strum",
@@ -1116,6 +1117,15 @@ name = "ryu"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28d3b2b1366ec20994f1fd18c3c594f05c5dd4bc44d8bb0c1c632c8d6829481f"
+
+[[package]]
+name = "sequential-storage"
+version = "4.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "516ed74ad8268ec0d78c574af8fc7e09a9c3a0df63c7692c588a10d7097dea3b"
+dependencies = [
+ "embedded-storage-async",
+]
 
 [[package]]
 name = "serde"

@@ -34,6 +34,7 @@ pub mod config;
 pub mod count;
 pub mod maths;
 pub mod menustate;
+pub mod storage;
 pub mod tasks;
 
 pub static MENU_STATE: Mutex<CriticalSectionRawMutex, State> = Mutex::new(State::DeathToll);
