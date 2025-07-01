@@ -30,10 +30,12 @@ use ssd1306::{
 	I2CDisplayInterface, Ssd1306Async, mode::DisplayConfigAsync, prelude::DisplayRotation,
 	size::DisplaySize128x64,
 };
+pub mod config;
 pub mod count;
 pub mod maths;
 pub mod menustate;
 pub mod tasks;
+
 pub static MENU_STATE: Mutex<CriticalSectionRawMutex, State> = Mutex::new(State::DeathToll);
 
 #[esp_hal_embassy::main]

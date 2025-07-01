@@ -21,10 +21,10 @@ use crate::{
 
 #[derive(Clone, Debug, IntoStaticStr)]
 pub enum RgbMode {
-	SineCycle(f64),
-	Continuous(u64),
-	Random(u64),
-	Fibonacci(u64),
+	SineCycle(f32),
+	Continuous(u32),
+	Random(u32),
+	Fibonacci(u32),
 	Static(RGB8),
 }
 pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::SineCycle(0.01));
@@ -47,7 +47,7 @@ pub async fn handle_neopixel(
 			RgbMode::SineCycle(rate) => {
 				let time = Instant::now().as_micros() as f64 / 1E6;
 				let colour = Hsv {
-					hue: (sin(time * (rate * rate_multiplier as f64)) * 255.0) as u8,
+					hue: (sin(time * (rate as f64 * rate_multiplier as f64)) * 255.0) as u8,
 					sat: 255,
 					val: 255,
 				};
@@ -63,8 +63,8 @@ pub async fn handle_neopixel(
 				hsv2rgb(colour)
 			}
 			RgbMode::Random(rate) => {
-				let time = Instant::now().as_millis();
-				if time % (5000 / (rate * rate_multiplier as u64)) == 0 {
+				let time = Instant::now().as_millis() as u32;
+				if time % (5000 / (rate * rate_multiplier as u32)) == 0 {
 					let colour = Hsv {
 						hue: (rng.random() / 257) as u8,
 						sat: 255,
@@ -77,8 +77,8 @@ pub async fn handle_neopixel(
 				}
 			}
 			RgbMode::Fibonacci(rate) => {
-				let time = Instant::now().as_millis();
-				if time % (5000 / (rate * rate_multiplier as u64)) == 0 {
+				let time = Instant::now().as_millis() as u32;
+				if time % (5000 / (rate * rate_multiplier as u32)) == 0 {
 					let colour = Hsv {
 						hue: fib.next(),
 						sat: 255,
