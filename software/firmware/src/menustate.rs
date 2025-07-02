@@ -1,9 +1,8 @@
 use core::mem::MaybeUninit;
 
+use crate::tasks::handle_neopixel::{RGB_BRIGHTNESS, RGB_MODE, RGB_RATE_MULTIPLIER, RgbMode};
 use embassy_futures::select::Either;
-use strum::{IntoStaticStr, VariantArray};
-
-use crate::tasks::handle_neopixel::RgbMode;
+use strum::{EnumDiscriminants, IntoDiscriminant, IntoStaticStr, VariantArray};
 
 #[derive(Clone, Debug)]
 pub enum State<'a> {
@@ -52,13 +51,14 @@ pub static MAIN_MENU: Menu<'static> = Menu::new(
 		Menu::new("RGB Rate", Either::Second(&RgbRate::map_to_menu_result())),
 	]),
 );
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, EnumDiscriminants, PartialEq)]
+#[strum_discriminants(name(MenuType))]
 pub enum MenuResult {
 	RgbMode(RgbMode),
 	RgbBrightness(RgbBrightness),
 	RgbRate(RgbRate),
 }
-#[derive(Debug, Clone, Copy, IntoStaticStr, VariantArray)]
+#[derive(Debug, Clone, Copy, IntoStaticStr, VariantArray, PartialEq)]
 pub enum RgbBrightness {
 	Low = 10,
 	Medium = 100,
@@ -67,7 +67,7 @@ pub enum RgbBrightness {
 }
 
 /// Values roughly model an exponential curve (rounded to the nearest integer)
-#[derive(Debug, Clone, Copy, IntoStaticStr, VariantArray)]
+#[derive(Debug, Clone, Copy, IntoStaticStr, VariantArray, PartialEq)]
 pub enum RgbRate {
 	VerySlow = 1,
 	Slow = 3,
@@ -102,5 +102,33 @@ impl From<MenuResult> for &'static str {
 			MenuResult::RgbBrightness(x) => x.into(),
 			MenuResult::RgbRate(x) => x.into(),
 		}
+	}
+}
+
+pub async fn default_index<'a>(m: &Menu<'a>) -> usize {
+	if let Either::Second(x) = &m.items {
+		let tp = MenuType::from(&x[0]);
+		match tp {
+			MenuType::RgbMode => {
+				let current_mode = { RGB_MODE.lock().await.clone() };
+				x.iter()
+					.position(|y| *y == MenuResult::RgbMode(current_mode.clone()))
+					.unwrap_or(0)
+			}
+			MenuType::RgbBrightness => {
+				let current_mode = { RGB_BRIGHTNESS.lock().await.clone() };
+				x.iter()
+					.position(|y| *y == MenuResult::RgbBrightness(current_mode.clone()))
+					.unwrap_or(0)
+			}
+			MenuType::RgbRate => {
+				let current_mode = { RGB_RATE_MULTIPLIER.lock().await.clone() };
+				x.iter()
+					.position(|y| *y == MenuResult::RgbRate(current_mode.clone()))
+					.unwrap_or(0)
+			}
+		}
+	} else {
+		0
 	}
 }

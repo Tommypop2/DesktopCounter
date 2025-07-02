@@ -2,7 +2,7 @@
 #![no_main]
 
 use crate::count::{decrement_count, increment_count, read_count};
-use crate::menustate::{MAIN_MENU, MenuResult, State};
+use crate::menustate::{MAIN_MENU, MenuResult, MenuType, State, default_index};
 use crate::tasks::handle_button::{BUTTON_STATE, ButtonEvent, handle_button};
 use crate::tasks::handle_neopixel::{
 	RGB_BRIGHTNESS, RGB_MODE, RGB_RATE_MULTIPLIER, handle_neopixel,
@@ -124,8 +124,10 @@ async fn main(spawner: embassy_executor::Spawner) {
 								}
 							}
 							ButtonEvent::HoldHalfSecond => {
-								*MENU_STATE.lock().await = State::Menu(&x[menu_index]);
-								menu_index = 0;
+								let new_menu = &x[menu_index];
+								let new_index = default_index(new_menu).await;
+								*MENU_STATE.lock().await = State::Menu(new_menu);
+								menu_index = new_index;
 							}
 							ButtonEvent::HoldFullSecond => {
 								*MENU_STATE.lock().await = State::DeathToll;
@@ -148,12 +150,10 @@ async fn main(spawner: embassy_executor::Spawner) {
 										*RGB_MODE.lock().await = mode;
 									}
 									MenuResult::RgbBrightness(brightness) => {
-										let value = brightness as u8;
-										*RGB_BRIGHTNESS.lock().await = value;
+										*RGB_BRIGHTNESS.lock().await = brightness;
 									}
-									MenuResult::RgbRate(r) => {
-										let value = r as usize;
-										*RGB_RATE_MULTIPLIER.lock().await = value as u8;
+									MenuResult::RgbRate(rate) => {
+										*RGB_RATE_MULTIPLIER.lock().await = rate;
 									}
 								}
 								// menu_index = 0;

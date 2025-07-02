@@ -15,11 +15,11 @@ use smart_leds::{
 use strum::IntoStaticStr;
 
 use crate::{
-	maths::{FibonacciWrapped, sin},
-	menustate::RgbRate,
+	maths::{sin, FibonacciWrapped},
+	menustate::{RgbBrightness, RgbRate},
 };
 
-#[derive(Clone, Debug, IntoStaticStr)]
+#[derive(Clone, Debug, IntoStaticStr, PartialEq)]
 pub enum RgbMode {
 	SineCycle(f32),
 	Continuous(u32),
@@ -28,9 +28,9 @@ pub enum RgbMode {
 	Static(RGB8),
 }
 pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::SineCycle(0.01));
-pub static RGB_BRIGHTNESS: Mutex<CriticalSectionRawMutex, u8> = Mutex::new(10);
-pub static RGB_RATE_MULTIPLIER: Mutex<CriticalSectionRawMutex, u8> =
-	Mutex::new(RgbRate::Moderate as u8);
+pub static RGB_BRIGHTNESS: Mutex<CriticalSectionRawMutex, RgbBrightness> = Mutex::new(RgbBrightness::Low);
+pub static RGB_RATE_MULTIPLIER: Mutex<CriticalSectionRawMutex, RgbRate> =
+	Mutex::new(RgbRate::Moderate);
 #[embassy_executor::task]
 pub async fn handle_neopixel(
 	rmt_channel: ChannelCreator<Async, 0>,
@@ -42,8 +42,8 @@ pub async fn handle_neopixel(
 	let mut fib = FibonacciWrapped::new();
 	let mut prev_colour = RGB8::new(0, 0, 0);
 	loop {
-		let rate_multiplier = { *RGB_RATE_MULTIPLIER.lock().await };
-		let colour = match RGB_MODE.lock().await.clone() {
+		let rate_multiplier = { *RGB_RATE_MULTIPLIER.lock().await } as u8;
+		let colour = match { RGB_MODE.lock().await.clone() } {
 			RgbMode::SineCycle(rate) => {
 				let time = Instant::now().as_micros() as f64 / 1E6;
 				let colour = Hsv {
@@ -98,7 +98,7 @@ pub async fn handle_neopixel(
 			continue;
 		}
 		prev_colour = colour;
-		let level = { *RGB_BRIGHTNESS.lock().await };
+		let level = { *RGB_BRIGHTNESS.lock().await } as u8;
 		neopixel
 			.write(brightness(gamma([colour].into_iter()), level))
 			.await
