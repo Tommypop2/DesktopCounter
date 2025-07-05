@@ -4,25 +4,29 @@ use embassy_embedded_hal::adapter::BlockingAsync;
 use esp_storage::FlashStorage;
 use sequential_storage::{
 	cache::NoCache,
-	map::{Value, fetch_item},
+	map::{Value, fetch_item, store_item},
 };
 
 use crate::config::RgbConfig;
 
+/// Storage for a single type, T
 pub struct Storage<'a, T: Value<'a>> {
 	flash: BlockingAsync<FlashStorage>,
 	flash_range: Range<u32>,
 	data_buffer: [u8; 128],
+	search_key: u8,
 	phantom: PhantomData<&'a T>,
 }
+
 impl<'a, T: Value<'a>> Storage<'a, T> {
-	pub fn new() -> Self {
-		let flash = BlockingAsync::new(FlashStorage::new());
-		let flash_range = 0x1000..0x3000;
+	/// MUST ensure that `search_key` is unique for this type
+	pub fn new(flash: FlashStorage, flash_range: Range<u32>, search_key: u8) -> Self {
+		let flash = BlockingAsync::new(flash);
 		let data_buffer = [0; 128];
 		Self {
 			flash,
 			flash_range,
+			search_key,
 			data_buffer,
 			phantom: PhantomData,
 		}
@@ -33,12 +37,25 @@ impl<'a, T: Value<'a>> Storage<'a, T> {
 			self.flash_range.clone(),
 			&mut NoCache::new(),
 			&mut self.data_buffer,
-			&42,
+			&self.search_key,
 		)
 		.await
 		.unwrap()
 	}
-	pub async fn write() {}
+	pub async fn write(
+		&mut self,
+		value: &T,
+	) -> Result<(), sequential_storage::Error<esp_storage::FlashStorageError>> {
+		store_item::<u8, T, _>(
+			&mut self.flash,
+			self.flash_range.clone(),
+			&mut NoCache::new(),
+			&mut self.data_buffer,
+			&self.search_key,
+			value,
+		)
+		.await
+	}
 }
 pub async fn store_config(cfg: RgbConfig) {
 	// Below copied from sequential-storage example then `BlockingAsync` was added
