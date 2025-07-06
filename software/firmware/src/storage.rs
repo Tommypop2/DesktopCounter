@@ -73,31 +73,3 @@ impl<T: for<'a> Value<'a>> Storage<T> {
 		.await
 	}
 }
-pub async fn store_config(cfg: RgbConfig) {
-	// Below copied from sequential-storage example then `BlockingAsync` was added
-	let mut flash = BlockingAsync::new(FlashStorage::new());
-	// These are the flash addresses in which the crate will operate.
-	// The crate will not read, write or erase outside of this range.
-	let flash_range = 0x1000..0x3000;
-	// We need to give the crate a buffer to work with.
-	// It must be big enough to serialize the biggest value of your storage type in,
-	// rounded up to to word alignment of the flash. Some kinds of internal flash may require
-	// this buffer to be aligned in RAM as well.
-	let mut data_buffer = [0; 128];
-
-	// We can fetch an item from the flash. We're using `u8` as our key type and `u32` as our value type.
-	// Nothing is stored in it yet, so it will return None.
-
-	assert_eq!(
-		fetch_item::<u8, u32, _>(
-			&mut flash,
-			flash_range.clone(),
-			&mut NoCache::new(),
-			&mut data_buffer,
-			&42,
-		)
-		.await
-		.unwrap(),
-		None
-	);
-}
