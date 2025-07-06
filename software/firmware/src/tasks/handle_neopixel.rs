@@ -18,7 +18,6 @@ use crate::{
 	config::RgbConfig,
 	const_default::ConstDefault,
 	maths::{FibonacciWrapped, sin},
-	menustate::{RgbBrightness, RgbRate},
 };
 
 #[derive(Clone, Debug, IntoStaticStr, PartialEq)]

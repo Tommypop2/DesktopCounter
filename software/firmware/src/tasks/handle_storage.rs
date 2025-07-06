@@ -57,7 +57,8 @@ async fn handle_config_storage(flash: &Mutex<CriticalSectionRawMutex, FlashRegio
 				&RgbConfig::from_environment().await,
 				&mut *flash.lock().await,
 			)
-			.await.unwrap();
+			.await
+			.unwrap();
 	}
 	loop {
 		yield_now().await;

@@ -25,7 +25,6 @@ use esp_hal::{
 	timer::timg::TimerGroup,
 };
 
-use esp_storage::FlashStorage;
 use ssd1306::{
 	I2CDisplayInterface, Ssd1306Async, mode::DisplayConfigAsync, prelude::DisplayRotation,
 	size::DisplaySize128x64,

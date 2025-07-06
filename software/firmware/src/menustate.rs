@@ -5,7 +5,7 @@ use crate::{
 	tasks::handle_neopixel::{RGB_CONFIG, RgbMode},
 };
 use embassy_futures::select::Either;
-use strum::{EnumDiscriminants, IntoDiscriminant, IntoStaticStr, VariantArray};
+use strum::{EnumDiscriminants, IntoStaticStr, VariantArray};
 
 #[derive(Clone, Debug)]
 pub enum State<'a> {

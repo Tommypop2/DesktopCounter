@@ -1,7 +1,6 @@
 use core::{marker::PhantomData, ops::Range};
 
 use embassy_embedded_hal::adapter::BlockingAsync;
-use embedded_storage::nor_flash::ReadNorFlash as _;
 use esp_storage::FlashStorage;
 use sequential_storage::{
 	cache::{KeyPointerCache, NoCache},
