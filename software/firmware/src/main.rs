@@ -1,8 +1,6 @@
 #![no_std]
 #![no_main]
 
-use crate::config::RgbConfig;
-use crate::const_default::ConstDefault;
 use crate::count::{COUNT, decrement_count, increment_count};
 use crate::menustate::{MAIN_MENU, MenuResult, State, default_index};
 use crate::tasks::handle_button::{BUTTON_STATE, ButtonEvent, handle_button};
@@ -80,9 +78,6 @@ async fn main(spawner: embassy_executor::Spawner) {
 
 	let mut buf = [0u8; 30];
 	let mut menu_index: usize = 0;
-	let mut rcv = RGB_CONFIG.receiver().unwrap();
-	let send = RGB_CONFIG.sender();
-	send.send(RgbConfig::DEFAULT);
 	loop {
 		// Clone the value and drop the lock immediately (so it can be modified by another task)
 		let value = { MENU_STATE.lock().await.clone() };
@@ -150,7 +145,7 @@ async fn main(spawner: embassy_executor::Spawner) {
 							}
 							ButtonEvent::HoldHalfSecond => {
 								let result = x[menu_index].clone();
-								let mut rgb_config = rcv.get().await;
+								let mut rgb_config = RGB_CONFIG.lock().await;
 								match result {
 									MenuResult::RgbMode(mode) => {
 										rgb_config.set_mode(mode);
@@ -162,7 +157,6 @@ async fn main(spawner: embassy_executor::Spawner) {
 										rgb_config.set_rate(rate);
 									}
 								}
-								send.send(rgb_config);
 								// menu_index = 0;
 								// *MENU_STATE.lock().await = State::Menu(&MAIN_MENU)
 							}

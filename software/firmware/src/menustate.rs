@@ -1,7 +1,6 @@
 use core::mem::MaybeUninit;
 
 use crate::{
-	config::RgbConfig,
 	const_default::ConstDefault,
 	tasks::handle_neopixel::{RGB_CONFIG, RgbMode},
 };
@@ -116,7 +115,7 @@ impl From<MenuResult> for &'static str {
 pub async fn default_index<'a>(m: &Menu<'a>) -> usize {
 	if let Either::Second(x) = &m.items {
 		let tp = MenuType::from(&x[0]);
-		let rgb_config = RGB_CONFIG.try_get().unwrap_or(RgbConfig::DEFAULT);
+		let rgb_config = RGB_CONFIG.lock().await.clone();
 		match tp {
 			MenuType::RgbMode => x
 				.iter()

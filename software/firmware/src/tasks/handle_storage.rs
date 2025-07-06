@@ -11,7 +11,6 @@ use futures::future::{Either, select};
 
 use crate::{
 	config::RgbConfig,
-	const_default::ConstDefault,
 	count::COUNT,
 	storage::{FlashRegion, Storage},
 };
@@ -61,17 +60,8 @@ async fn handle_config_storage(flash: &Mutex<CriticalSectionRawMutex, FlashRegio
 			.await
 			.unwrap();
 	}
-	let mut prev_config: RgbConfig = RgbConfig::DEFAULT;
 	loop {
 		yield_now().await;
-		// let rgb_config = { RGB_CONFIG.lock().await.clone() };
-		// if rgb_config == prev_config {
-		// 	yield_now().await;
-		// 	continue;
-		// }
-		// prev_config = rgb_config;
-		// // Current config is different to previous config!
-		// println!("Config change!!");
 	}
 }
 #[embassy_executor::task]

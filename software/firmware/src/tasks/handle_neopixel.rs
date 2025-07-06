@@ -1,4 +1,5 @@
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, watch::Watch};
+use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+use embassy_sync::mutex::Mutex;
 use embassy_time::Instant;
 use esp_hal::{
 	Async,
@@ -31,7 +32,7 @@ impl ConstDefault for RgbMode {
 	const DEFAULT: Self = Self::SineCycle(0.01);
 }
 
-pub static RGB_CONFIG: Watch<CriticalSectionRawMutex, RgbConfig, 3> = Watch::new();
+pub static RGB_CONFIG: Mutex<CriticalSectionRawMutex, RgbConfig> = Mutex::new(RgbConfig::DEFAULT);
 
 #[embassy_executor::task]
 pub async fn handle_neopixel(
@@ -43,9 +44,8 @@ pub async fn handle_neopixel(
 	let mut rng = Rng::new(rng);
 	let mut fib = FibonacciWrapped::new();
 	let mut prev_colour = RGB8::new(0, 0, 0);
-	let mut rcv = RGB_CONFIG.receiver().unwrap();
 	loop {
-		let config = rcv.get().await;
+		let config = RGB_CONFIG.lock().await.clone();
 		let rate_multiplier = config.rgb_rate_modifier as u8;
 		let colour = match config.rgb_mode {
 			RgbMode::SineCycle(rate) => {
