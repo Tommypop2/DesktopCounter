@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[repr(C)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct RgbConfig {
 	pub rgb_mode: RgbMode,
 	pub rgb_brightness: RgbBrightness,

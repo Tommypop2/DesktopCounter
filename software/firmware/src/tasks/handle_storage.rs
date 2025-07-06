@@ -13,6 +13,7 @@ use crate::{
 	config::RgbConfig,
 	count::COUNT,
 	storage::{FlashRegion, Storage},
+	tasks::handle_neopixel::{RGB_CONFIG, RGB_CONFIG_UPDATED},
 };
 async fn handle_count_storage(flash: &Mutex<CriticalSectionRawMutex, FlashRegion>) {
 	let mut count_storage = Storage::<u32>::new(0);
@@ -49,19 +50,29 @@ async fn handle_count_storage(flash: &Mutex<CriticalSectionRawMutex, FlashRegion
 async fn handle_config_storage(flash: &Mutex<CriticalSectionRawMutex, FlashRegion>) {
 	let mut config_storage = Storage::<RgbConfig>::new(1);
 	let stored_config = config_storage.fetch(&mut *flash.lock().await).await;
-	println!("Stored config: {:?}", stored_config);
-	if stored_config.is_none() {
-		println!("Storing config");
-		config_storage
-			.write(
-				&RgbConfig::from_environment().await,
-				&mut *flash.lock().await,
-			)
-			.await
-			.unwrap();
+	if let Some(config) = &stored_config {
+		*RGB_CONFIG.lock().await = config.clone();
 	}
+	let mut stored_config = stored_config;
+	let mut rcv = RGB_CONFIG_UPDATED.receiver().unwrap();
 	loop {
-		yield_now().await;
+		match select(pin!(rcv.changed()), Timer::after_secs(2)).await {
+			// Count changes before timer completes
+			Either::Left((_, _timer)) => {}
+			// Timer completes before count changes, so save
+			Either::Right(_r) => {
+				let config = RGB_CONFIG.lock().await.clone();
+				if Some(&config) != stored_config.as_ref() {
+					println!("Saving config as {:?}", config);
+					config_storage
+						.write(&config, &mut *flash.lock().await)
+						.await
+						.unwrap();
+					stored_config = Some(config);
+					println!("Saved config")
+				}
+			}
+		}
 	}
 }
 #[embassy_executor::task]

@@ -1,5 +1,5 @@
-use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, watch::Watch};
 use embassy_time::Instant;
 use esp_hal::{
 	Async,
@@ -33,7 +33,7 @@ impl ConstDefault for RgbMode {
 }
 
 pub static RGB_CONFIG: Mutex<CriticalSectionRawMutex, RgbConfig> = Mutex::new(RgbConfig::DEFAULT);
-
+pub static RGB_CONFIG_UPDATED: Watch<CriticalSectionRawMutex, u8, 4> = Watch::new();
 #[embassy_executor::task]
 pub async fn handle_neopixel(
 	rmt_channel: ChannelCreator<Async, 0>,

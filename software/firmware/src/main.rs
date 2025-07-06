@@ -4,7 +4,7 @@
 use crate::count::{COUNT, decrement_count, increment_count};
 use crate::menustate::{MAIN_MENU, MenuResult, State, default_index};
 use crate::tasks::handle_button::{BUTTON_STATE, ButtonEvent, handle_button};
-use crate::tasks::handle_neopixel::{RGB_CONFIG, handle_neopixel};
+use crate::tasks::handle_neopixel::{RGB_CONFIG, RGB_CONFIG_UPDATED, handle_neopixel};
 use crate::tasks::handle_storage::handle_storage;
 use embassy_futures::select::Either;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
@@ -78,6 +78,7 @@ async fn main(spawner: embassy_executor::Spawner) {
 
 	let mut buf = [0u8; 30];
 	let mut menu_index: usize = 0;
+	let send = RGB_CONFIG_UPDATED.sender();
 	loop {
 		// Clone the value and drop the lock immediately (so it can be modified by another task)
 		let value = { MENU_STATE.lock().await.clone() };
@@ -157,8 +158,7 @@ async fn main(spawner: embassy_executor::Spawner) {
 										rgb_config.set_rate(rate);
 									}
 								}
-								// menu_index = 0;
-								// *MENU_STATE.lock().await = State::Menu(&MAIN_MENU)
+								send.send(0);
 							}
 							ButtonEvent::HoldFullSecond => {
 								menu_index = 0;
