@@ -2,25 +2,21 @@
 
 use core::pin::pin;
 
+use embassy_futures::{join::join, yield_now};
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use embassy_time::Timer;
 use esp_println::println;
 use esp_storage::FlashStorage;
 use futures::future::{Either, select};
 
 use crate::{
+	config::RgbConfig,
 	count::COUNT,
 	storage::{FlashRegion, Storage},
 };
-
-#[embassy_executor::task]
-pub async fn handle_storage() {
-	// Partition for NVS
-	// boot:  0 nvs              WiFi data        01 02 00009000 00006000
-	// So region is 0x9000..0xF000
-	// 0x9000..0xC000 uses half of the NVS region (so the latter region can easily be used in the future to store something else)
-	let mut flash = FlashRegion::new(FlashStorage::new(), 0x9000..0xC000);
+async fn handle_count_storage(flash: &Mutex<CriticalSectionRawMutex, FlashRegion>) {
 	let mut count_storage = Storage::<u32>::new(0);
-	let saved_count = count_storage.fetch(&mut flash).await;
+	let saved_count = count_storage.fetch(&mut *flash.lock().await).await;
 	println!("Saved count: {:?}", saved_count);
 	if let Some(c) = saved_count {
 		COUNT.sender().send(c);
@@ -38,11 +34,45 @@ pub async fn handle_storage() {
 					&& Some(count) != stored_count
 				{
 					println!("Saving count as {count}");
-					count_storage.write(&count, &mut flash).await.unwrap();
+					count_storage
+						.write(&count, &mut *flash.lock().await)
+						.await
+						.unwrap();
 					stored_count = Some(count);
 					println!("Saved count")
 				}
 			}
 		}
 	}
+}
+
+async fn handle_config_storage(flash: &Mutex<CriticalSectionRawMutex, FlashRegion>) {
+	let mut config_storage = Storage::<RgbConfig>::new(1);
+	let stored_config = config_storage.fetch(&mut *flash.lock().await).await;
+	println!("Stored config: {:?}", stored_config);
+	if stored_config.is_none() {
+		println!("Storing config");
+		config_storage
+			.write(
+				&RgbConfig::from_environment().await,
+				&mut *flash.lock().await,
+			)
+			.await.unwrap();
+	}
+	loop {
+		yield_now().await;
+	}
+}
+#[embassy_executor::task]
+pub async fn handle_storage() {
+	// Partition for NVS
+	// boot:  0 nvs              WiFi data        01 02 00009000 00006000
+	// So region is 0x9000..0xF000
+	// 0x9000..0xC000 uses half of the NVS region (so the latter region can easily be used in the future to store something else)
+	let flash = Mutex::<CriticalSectionRawMutex, _>::new(FlashRegion::new(
+		FlashStorage::new(),
+		0x9000..0xC000,
+	));
+	join(handle_count_storage(&flash), handle_config_storage(&flash)).await;
+	unreachable!()
 }

@@ -15,6 +15,7 @@ use smart_leds::{
 use strum::IntoStaticStr;
 
 use crate::{
+	const_default::ConstDefault,
 	maths::{FibonacciWrapped, sin},
 	menustate::{RgbBrightness, RgbRate},
 };
@@ -27,11 +28,15 @@ pub enum RgbMode {
 	Fibonacci(u32),
 	Static(RGB8),
 }
-pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::SineCycle(0.01));
+impl ConstDefault for RgbMode {
+	const DEFAULT: Self = Self::SineCycle(0.01);
+}
+
+pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::DEFAULT);
 pub static RGB_BRIGHTNESS: Mutex<CriticalSectionRawMutex, RgbBrightness> =
-	Mutex::new(RgbBrightness::Low);
+	Mutex::new(RgbBrightness::DEFAULT);
 pub static RGB_RATE_MULTIPLIER: Mutex<CriticalSectionRawMutex, RgbRate> =
-	Mutex::new(RgbRate::Moderate);
+	Mutex::new(RgbRate::DEFAULT);
 #[embassy_executor::task]
 pub async fn handle_neopixel(
 	rmt_channel: ChannelCreator<Async, 0>,
