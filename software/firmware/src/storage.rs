@@ -3,11 +3,9 @@ use core::{marker::PhantomData, ops::Range};
 use embassy_embedded_hal::adapter::BlockingAsync;
 use esp_storage::FlashStorage;
 use sequential_storage::{
-	cache::{KeyPointerCache, NoCache},
+	cache::KeyPointerCache,
 	map::{Value, fetch_item, store_item},
 };
-
-use crate::config::RgbConfig;
 
 /// Storage for a single type, T
 pub struct Storage<T: for<'a> Value<'a>> {

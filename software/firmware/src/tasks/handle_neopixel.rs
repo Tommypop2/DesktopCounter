@@ -32,11 +32,6 @@ impl ConstDefault for RgbMode {
 	const DEFAULT: Self = Self::SineCycle(0.01);
 }
 
-// pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::DEFAULT);
-// pub static RGB_BRIGHTNESS: Mutex<CriticalSectionRawMutex, RgbBrightness> =
-// 	Mutex::new(RgbBrightness::DEFAULT);
-// pub static RGB_RATE_MULTIPLIER: Mutex<CriticalSectionRawMutex, RgbRate> =
-// 	Mutex::new(RgbRate::DEFAULT);
 pub static RGB_CONFIG: Mutex<CriticalSectionRawMutex, RgbConfig> = Mutex::new(RgbConfig::DEFAULT);
 
 #[embassy_executor::task]
