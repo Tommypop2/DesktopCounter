@@ -81,6 +81,7 @@ async fn handle_config_storage(flash: &Mutex<CriticalSectionRawMutex, FlashRegio
 #[embassy_executor::task]
 pub async fn handle_storage() {
 	// Partition for NVS
+	// boot: ## Label            Usage          Type ST Offset   Length
 	// boot:  0 nvs              WiFi data        01 02 00009000 00006000
 	// So region is 0x9000..0xF000
 	// 0x9000..0xC000 uses half of the NVS region (so the latter region can easily be used in the future to store something else)
