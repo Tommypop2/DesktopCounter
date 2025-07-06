@@ -11,10 +11,10 @@ use sequential_storage::{
 use crate::config::RgbConfig;
 
 /// Storage for a single type, T
-pub struct Storage<'a, T: Value<'a>> {
+pub struct Storage<T: for<'a> Value<'a>> {
 	data_buffer: [u8; 128],
 	search_key: u8,
-	phantom: PhantomData<&'a T>,
+	phantom: PhantomData<T>,
 }
 const fn page_count() -> usize {
 	const CAPACITY: usize = 4194304;
@@ -37,7 +37,7 @@ impl FlashRegion {
 		}
 	}
 }
-impl<'a, T: Value<'a>> Storage<'a, T> {
+impl<T: for<'a> Value<'a>> Storage<T> {
 	/// MUST ensure that `search_key` is unique for this type
 	pub fn new(search_key: u8) -> Self {
 		let data_buffer = [0; 128];
@@ -47,7 +47,7 @@ impl<'a, T: Value<'a>> Storage<'a, T> {
 			phantom: PhantomData,
 		}
 	}
-	pub async fn fetch(&'a mut self, flash: &mut FlashRegion) -> Option<T> {
+	pub async fn fetch(&mut self, flash: &mut FlashRegion) -> Option<T> {
 		fetch_item::<u8, T, _>(
 			&mut flash.flash,
 			flash.flash_range.clone(),
