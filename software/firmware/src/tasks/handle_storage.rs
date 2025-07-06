@@ -2,7 +2,7 @@
 
 use core::pin::pin;
 
-use embassy_futures::{join::join, yield_now};
+use embassy_futures::join::join;
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use embassy_time::Timer;
 use esp_println::println;
