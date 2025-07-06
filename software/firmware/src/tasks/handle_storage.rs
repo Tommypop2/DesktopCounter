@@ -18,7 +18,7 @@ use crate::{
 async fn handle_count_storage(flash: &Mutex<CriticalSectionRawMutex, FlashRegion>) {
 	let mut count_storage = Storage::<u32>::new(0);
 	let saved_count = count_storage.fetch(&mut *flash.lock().await).await;
-	println!("Saved count: {:?}", saved_count);
+	println!("Stored count: {:?}", saved_count);
 	if let Some(c) = saved_count {
 		COUNT.sender().send(c);
 	}
@@ -51,18 +51,21 @@ async fn handle_config_storage(flash: &Mutex<CriticalSectionRawMutex, FlashRegio
 	let mut config_storage = Storage::<RgbConfig>::new(1);
 	let stored_config = config_storage.fetch(&mut *flash.lock().await).await;
 	if let Some(config) = &stored_config {
+		println!("Stored config: {:?}", config);
 		*RGB_CONFIG.lock().await = config.clone();
 	}
+	let mut new_config: Option<RgbConfig> = None;
 	let mut stored_config = stored_config;
 	let mut rcv = RGB_CONFIG_UPDATED.receiver().unwrap();
 	loop {
 		match select(pin!(rcv.changed()), Timer::after_secs(2)).await {
-			// Count changes before timer completes
-			Either::Left((_, _timer)) => {}
-			// Timer completes before count changes, so save
+			// Config changes before timer completes
+			Either::Left((_, _timer)) => new_config = Some(RGB_CONFIG.lock().await.clone()),
+			// Timer completes before config changes, so save
 			Either::Right(_r) => {
-				let config = RGB_CONFIG.lock().await.clone();
-				if Some(&config) != stored_config.as_ref() {
+				if let Some(config) = new_config.take()
+					&& Some(&config) != stored_config.as_ref()
+				{
 					println!("Saving config as {:?}", config);
 					config_storage
 						.write(&config, &mut *flash.lock().await)
