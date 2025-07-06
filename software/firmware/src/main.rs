@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use crate::count::{decrement_count, increment_count, read_count};
+use crate::count::{COUNT, decrement_count, increment_count, read_count};
 use crate::menustate::{MAIN_MENU, MenuResult, MenuType, State, default_index};
 use crate::storage::{FlashRegion, Storage};
 use crate::tasks::handle_button::{BUTTON_STATE, ButtonEvent, handle_button};
@@ -89,7 +89,7 @@ async fn main(spawner: embassy_executor::Spawner) {
 
 		match value {
 			State::DeathToll => {
-				let value = read_count();
+				let value = COUNT.try_get().unwrap_or(0);
 				display.clear_buffer();
 				Text::with_baseline("Death Toll", Point::zero(), text_style, Baseline::Top)
 					.draw(&mut display)
