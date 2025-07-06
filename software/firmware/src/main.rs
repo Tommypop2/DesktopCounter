@@ -1,14 +1,13 @@
 #![no_std]
 #![no_main]
 
-use crate::count::{COUNT, decrement_count, increment_count, read_count};
-use crate::menustate::{MAIN_MENU, MenuResult, MenuType, State, default_index};
-use crate::storage::{FlashRegion, Storage};
+use crate::count::{COUNT, decrement_count, increment_count};
+use crate::menustate::{MAIN_MENU, MenuResult, State, default_index};
 use crate::tasks::handle_button::{BUTTON_STATE, ButtonEvent, handle_button};
 use crate::tasks::handle_neopixel::{
 	RGB_BRIGHTNESS, RGB_MODE, RGB_RATE_MULTIPLIER, handle_neopixel,
 };
-use embassy_embedded_hal::adapter::BlockingAsync;
+use crate::tasks::storage::handle_storage;
 use embassy_futures::select::Either;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
@@ -50,7 +49,7 @@ async fn main(spawner: embassy_executor::Spawner) {
 
 	let timer_group_0 = TimerGroup::new(peripherals.TIMG0);
 	esp_hal_embassy::init(timer_group_0.timer0);
-
+	spawner.spawn(handle_storage()).unwrap();
 	spawner
 		.spawn(handle_button(peripherals.GPIO2, peripherals.GPIO3))
 		.unwrap();
@@ -81,8 +80,6 @@ async fn main(spawner: embassy_executor::Spawner) {
 
 	let mut buf = [0u8; 30];
 	let mut menu_index: usize = 0;
-	let mut flash = FlashRegion::new(FlashStorage::new(), 0x1000..0x2000);
-	let x = Storage::<u32>::new(0);
 	loop {
 		// Clone the value and drop the lock immediately (so it can be modified by another task)
 		let value = { MENU_STATE.lock().await.clone() };

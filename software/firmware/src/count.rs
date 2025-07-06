@@ -1,7 +1,4 @@
-use core::sync::atomic::AtomicU32;
-
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, watch::Watch};
-use esp_println::dbg;
 
 pub static COUNT: Watch<CriticalSectionRawMutex, u32, 2> = Watch::new();
 
@@ -11,7 +8,6 @@ pub fn read_count() -> u32 {
 
 pub fn write_count(x: u32) {
 	let snd = COUNT.sender();
-	dbg!("Sending...", x);
 	snd.send(x);
 }
 
