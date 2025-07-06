@@ -1,6 +1,6 @@
 use core::mem::MaybeUninit;
 
-use crate::tasks::handle_neopixel::{RGB_BRIGHTNESS, RGB_MODE, RGB_RATE_MULTIPLIER, RgbMode};
+use crate::{const_default::ConstDefault, tasks::handle_neopixel::{RgbMode, RGB_BRIGHTNESS, RGB_MODE, RGB_RATE_MULTIPLIER}};
 use embassy_futures::select::Either;
 use strum::{EnumDiscriminants, IntoDiscriminant, IntoStaticStr, VariantArray};
 
@@ -65,7 +65,9 @@ pub enum RgbBrightness {
 	High = 200,
 	Max = 255,
 }
-
+impl ConstDefault for RgbBrightness {
+	const DEFAULT: Self = Self::Low;
+}
 /// Values roughly model an exponential curve (rounded to the nearest integer)
 #[derive(Debug, Clone, Copy, IntoStaticStr, VariantArray, PartialEq)]
 pub enum RgbRate {
@@ -75,7 +77,9 @@ pub enum RgbRate {
 	Fast = 20,
 	VeryFast = 55,
 }
-
+impl ConstDefault for RgbRate {
+	const DEFAULT: Self = Self::Moderate;
+}
 /// Nasty macro that allows for a constant mapping of `T` to `MenuResult<T>`
 macro_rules! implement_map_to_menu_result {
 	($x:ident) => {
