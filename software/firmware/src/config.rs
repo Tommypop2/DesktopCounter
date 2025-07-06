@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[repr(C)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct RgbConfig {
 	pub rgb_mode: RgbMode,
 	pub rgb_brightness: RgbBrightness,
@@ -30,10 +30,10 @@ impl RgbConfig {
 		}
 	}
 	pub async fn from_environment() -> Self {
-		RGB_CONFIG.lock().await.clone()
+		RGB_CONFIG.try_get().unwrap_or(Self::DEFAULT)
 	}
 	pub async fn apply(self) {
-		*RGB_CONFIG.lock().await = self
+		RGB_CONFIG.sender().send(self);
 	}
 	pub fn set_mode(&mut self, rgb_mode: RgbMode) {
 		self.rgb_mode = rgb_mode;
