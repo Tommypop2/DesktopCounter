@@ -52,6 +52,7 @@ pub static MAIN_MENU: Menu<'static> = Menu::new(
 			Either::Second(&RgbBrightness::map_to_menu_result()),
 		),
 		Menu::new("RGB Rate", Either::Second(&RgbRate::map_to_menu_result())),
+		Menu::new("Reset", Either::Second(&ResetOptions::map_to_menu_result())),
 	]),
 );
 #[derive(Debug, Clone, EnumDiscriminants, PartialEq)]
@@ -60,6 +61,13 @@ pub enum MenuResult {
 	RgbMode(RgbMode),
 	RgbBrightness(RgbBrightness),
 	RgbRate(RgbRate),
+	ResetOptions(ResetOptions),
+}
+#[derive(Debug, Clone, Copy, IntoStaticStr, VariantArray, PartialEq)]
+pub enum ResetOptions {
+	All,
+	Rgb,
+	Count,
 }
 #[derive(Debug, Clone, Copy, IntoStaticStr, VariantArray, PartialEq)]
 pub enum RgbBrightness {
@@ -102,12 +110,14 @@ macro_rules! implement_map_to_menu_result {
 }
 implement_map_to_menu_result!(RgbBrightness);
 implement_map_to_menu_result!(RgbRate);
+implement_map_to_menu_result!(ResetOptions);
 impl From<MenuResult> for &'static str {
 	fn from(value: MenuResult) -> Self {
 		match value {
 			MenuResult::RgbMode(x) => x.into(),
 			MenuResult::RgbBrightness(x) => x.into(),
 			MenuResult::RgbRate(x) => x.into(),
+			MenuResult::ResetOptions(x) => x.into(),
 		}
 	}
 }
@@ -129,6 +139,7 @@ pub async fn default_index<'a>(m: &Menu<'a>) -> usize {
 				.iter()
 				.position(|y| *y == MenuResult::RgbRate(rgb_config.rgb_rate_modifier))
 				.unwrap_or(0),
+			MenuType::ResetOptions => 0,
 		}
 	} else {
 		0

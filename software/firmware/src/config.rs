@@ -5,7 +5,8 @@ use sequential_storage::map::Value;
 
 use crate::{
 	const_default::ConstDefault,
-	menustate::{RgbBrightness, RgbRate},
+	count::COUNT,
+	menustate::{ResetOptions, RgbBrightness, RgbRate},
 	tasks::handle_neopixel::{RGB_CONFIG, RgbMode},
 };
 
@@ -78,5 +79,21 @@ impl<'a> Value<'a> for RgbConfig {
 		}
 		.clone();
 		Ok(data)
+	}
+}
+async fn reset_rgb_config() {
+	RgbConfig::DEFAULT.apply().await
+}
+fn reset_count() {
+	COUNT.sender().send(0)
+}
+pub async fn reset(opt: ResetOptions) {
+	match opt {
+		ResetOptions::All => {
+			reset_rgb_config().await;
+			reset_count();
+		}
+		ResetOptions::Count => reset_count(),
+		ResetOptions::Rgb => reset_rgb_config().await,
 	}
 }

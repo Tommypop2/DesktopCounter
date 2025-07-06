@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+use crate::config::reset;
 use crate::count::{COUNT, decrement_count, increment_count};
 use crate::menustate::{MAIN_MENU, MenuResult, State, default_index};
 use crate::tasks::handle_button::{BUTTON_STATE, ButtonEvent, handle_button};
@@ -156,6 +157,9 @@ async fn main(spawner: embassy_executor::Spawner) {
 									}
 									MenuResult::RgbRate(rate) => {
 										rgb_config.set_rate(rate);
+									}
+									MenuResult::ResetOptions(o) => {
+										reset(o).await;
 									}
 								}
 								send.send(0);
