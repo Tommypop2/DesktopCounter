@@ -1,6 +1,9 @@
 use core::mem::MaybeUninit;
 
-use crate::{const_default::ConstDefault, tasks::handle_neopixel::{RgbMode, RGB_BRIGHTNESS, RGB_MODE, RGB_RATE_MULTIPLIER}};
+use crate::{
+	const_default::ConstDefault,
+	tasks::handle_neopixel::{RGB_CONFIG, RgbMode},
+};
 use embassy_futures::select::Either;
 use strum::{EnumDiscriminants, IntoDiscriminant, IntoStaticStr, VariantArray};
 
@@ -112,25 +115,20 @@ impl From<MenuResult> for &'static str {
 pub async fn default_index<'a>(m: &Menu<'a>) -> usize {
 	if let Either::Second(x) = &m.items {
 		let tp = MenuType::from(&x[0]);
+		let rgb_config = RGB_CONFIG.lock().await.clone();
 		match tp {
-			MenuType::RgbMode => {
-				let current_mode = { RGB_MODE.lock().await.clone() };
-				x.iter()
-					.position(|y| *y == MenuResult::RgbMode(current_mode.clone()))
-					.unwrap_or(0)
-			}
-			MenuType::RgbBrightness => {
-				let current_mode = { RGB_BRIGHTNESS.lock().await.clone() };
-				x.iter()
-					.position(|y| *y == MenuResult::RgbBrightness(current_mode.clone()))
-					.unwrap_or(0)
-			}
-			MenuType::RgbRate => {
-				let current_mode = { RGB_RATE_MULTIPLIER.lock().await.clone() };
-				x.iter()
-					.position(|y| *y == MenuResult::RgbRate(current_mode.clone()))
-					.unwrap_or(0)
-			}
+			MenuType::RgbMode => x
+				.iter()
+				.position(|y| *y == MenuResult::RgbMode(rgb_config.rgb_mode.clone()))
+				.unwrap_or(0),
+			MenuType::RgbBrightness => x
+				.iter()
+				.position(|y| *y == MenuResult::RgbBrightness(rgb_config.rgb_brightness))
+				.unwrap_or(0),
+			MenuType::RgbRate => x
+				.iter()
+				.position(|y| *y == MenuResult::RgbRate(rgb_config.rgb_rate_modifier))
+				.unwrap_or(0),
 		}
 	} else {
 		0

@@ -1,22 +1,20 @@
 //! Handles serializing and deserializing how the device is configured
 //! to a single u8 value which can easily be saved to the ESP32 flash
 
-use core::mem::transmute;
-
 use sequential_storage::map::Value;
 
 use crate::{
 	const_default::ConstDefault,
 	menustate::{RgbBrightness, RgbRate},
-	tasks::handle_neopixel::{RGB_BRIGHTNESS, RGB_MODE, RGB_RATE_MULTIPLIER, RgbMode},
+	tasks::handle_neopixel::{RGB_CONFIG, RgbMode},
 };
 
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct RgbConfig {
-	rgb_mode: RgbMode,
-	rgb_brightness: RgbBrightness,
-	rgb_rate_modifier: RgbRate,
+	pub rgb_mode: RgbMode,
+	pub rgb_brightness: RgbBrightness,
+	pub rgb_rate_modifier: RgbRate,
 }
 
 impl RgbConfig {
@@ -32,16 +30,19 @@ impl RgbConfig {
 		}
 	}
 	pub async fn from_environment() -> Self {
-		Self::new(
-			RGB_MODE.lock().await.clone(),
-			RGB_BRIGHTNESS.lock().await.clone(),
-			RGB_RATE_MULTIPLIER.lock().await.clone(),
-		)
+		RGB_CONFIG.lock().await.clone()
 	}
 	pub async fn apply(self) {
-		*RGB_MODE.lock().await = self.rgb_mode;
-		*RGB_BRIGHTNESS.lock().await = self.rgb_brightness;
-		*RGB_RATE_MULTIPLIER.lock().await = self.rgb_rate_modifier;
+		*RGB_CONFIG.lock().await = self
+	}
+	pub fn set_mode(&mut self, rgb_mode: RgbMode) {
+		self.rgb_mode = rgb_mode;
+	}
+	pub fn set_brightness(&mut self, rgb_brightness: RgbBrightness) {
+		self.rgb_brightness = rgb_brightness;
+	}
+	pub fn set_rate(&mut self, rgb_rate_modifier: RgbRate) {
+		self.rgb_rate_modifier = rgb_rate_modifier;
 	}
 }
 impl ConstDefault for RgbConfig {

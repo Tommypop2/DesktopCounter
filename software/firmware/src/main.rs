@@ -4,10 +4,8 @@
 use crate::count::{COUNT, decrement_count, increment_count};
 use crate::menustate::{MAIN_MENU, MenuResult, State, default_index};
 use crate::tasks::handle_button::{BUTTON_STATE, ButtonEvent, handle_button};
-use crate::tasks::handle_neopixel::{
-	RGB_BRIGHTNESS, RGB_MODE, RGB_RATE_MULTIPLIER, handle_neopixel,
-};
-use crate::tasks::storage::handle_storage;
+use crate::tasks::handle_neopixel::{RGB_CONFIG, handle_neopixel};
+use crate::tasks::handle_storage::handle_storage;
 use embassy_futures::select::Either;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
@@ -33,12 +31,12 @@ use ssd1306::{
 	size::DisplaySize128x64,
 };
 pub mod config;
+pub mod const_default;
 pub mod count;
 pub mod maths;
 pub mod menustate;
 pub mod storage;
 pub mod tasks;
-pub mod const_default;
 
 pub static MENU_STATE: Mutex<CriticalSectionRawMutex, State> = Mutex::new(State::DeathToll);
 
@@ -148,15 +146,16 @@ async fn main(spawner: embassy_executor::Spawner) {
 							}
 							ButtonEvent::HoldHalfSecond => {
 								let result = x[menu_index].clone();
+								let mut rgb_config = RGB_CONFIG.lock().await;
 								match result {
 									MenuResult::RgbMode(mode) => {
-										*RGB_MODE.lock().await = mode;
+										rgb_config.set_mode(mode);
 									}
 									MenuResult::RgbBrightness(brightness) => {
-										*RGB_BRIGHTNESS.lock().await = brightness;
+										rgb_config.set_brightness(brightness);
 									}
 									MenuResult::RgbRate(rate) => {
-										*RGB_RATE_MULTIPLIER.lock().await = rate;
+										rgb_config.set_rate(rate);
 									}
 								}
 								// menu_index = 0;

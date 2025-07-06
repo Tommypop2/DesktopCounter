@@ -9,7 +9,7 @@ use esp_hal::{
 use futures::future::select;
 use smart_leds::RGB8;
 
-use crate::tasks::handle_neopixel::{RGB_MODE, RgbMode};
+use crate::tasks::handle_neopixel::{RGB_CONFIG, RgbMode};
 
 pub static BUTTON_STATE: Signal<CriticalSectionRawMutex, ButtonEvent> = Signal::new();
 #[derive(Debug, Clone, PartialEq)]
@@ -35,22 +35,25 @@ pub async fn handle_button(led_pin: GPIO2<'static>, button_pin: GPIO3<'static>) 
 
 				let previous_mode: RgbMode;
 				{
-					let mut mode = RGB_MODE.lock().await;
-					previous_mode = mode.clone();
+					let mut config = RGB_CONFIG.lock().await;
+					previous_mode = config.rgb_mode.clone();
 					// "White"
-					*mode = RgbMode::Static(RGB8::new(190, 240, 255));
+					config.set_mode(RgbMode::Static(RGB8::new(190, 240, 255)));
 				}
 				match select(button_release, Timer::after_millis(500)).await {
 					// Button released before next 0.5s
 					futures::future::Either::Left(_) => {}
 					futures::future::Either::Right((_, button_release)) => {
 						{
-							*RGB_MODE.lock().await = RgbMode::Static(RGB8::new(0, 0, 255))
+							RGB_CONFIG
+								.lock()
+								.await
+								.set_mode(RgbMode::Static(RGB8::new(0, 0, 255)))
 						}
 						button_release.await;
 					}
 				}
-				*RGB_MODE.lock().await = previous_mode;
+				RGB_CONFIG.lock().await.set_mode(previous_mode)
 			}
 		}
 
