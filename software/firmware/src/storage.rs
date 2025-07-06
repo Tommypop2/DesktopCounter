@@ -1,9 +1,10 @@
 use core::{marker::PhantomData, ops::Range};
 
 use embassy_embedded_hal::adapter::BlockingAsync;
+use embedded_storage::nor_flash::ReadNorFlash as _;
 use esp_storage::FlashStorage;
 use sequential_storage::{
-	cache::NoCache,
+	cache::{KeyPointerCache, NoCache},
 	map::{Value, fetch_item, store_item},
 };
 
@@ -14,18 +15,25 @@ pub struct Storage<'a, T: Value<'a>> {
 	flash: BlockingAsync<FlashStorage>,
 	flash_range: Range<u32>,
 	data_buffer: [u8; 128],
+	cache: KeyPointerCache<{ page_count() }, u8, 1>,
 	search_key: u8,
 	phantom: PhantomData<&'a T>,
 }
-
+const fn page_count() -> usize {
+	const CAPACITY: usize = 4194304;
+	CAPACITY / FlashStorage::SECTOR_SIZE as usize
+}
 impl<'a, T: Value<'a>> Storage<'a, T> {
 	/// MUST ensure that `search_key` is unique for this type
 	pub fn new(flash: FlashStorage, flash_range: Range<u32>, search_key: u8) -> Self {
+		esp_println::println!("Capacity: {} bytes", flash.capacity());
+		let cache: KeyPointerCache<{ page_count() }, u8, 1> = KeyPointerCache::new();
 		let flash = BlockingAsync::new(flash);
 		let data_buffer = [0; 128];
 		Self {
 			flash,
 			flash_range,
+			cache,
 			search_key,
 			data_buffer,
 			phantom: PhantomData,
@@ -35,7 +43,7 @@ impl<'a, T: Value<'a>> Storage<'a, T> {
 		fetch_item::<u8, T, _>(
 			&mut self.flash,
 			self.flash_range.clone(),
-			&mut NoCache::new(),
+			&mut self.cache,
 			&mut self.data_buffer,
 			&self.search_key,
 		)
@@ -49,7 +57,7 @@ impl<'a, T: Value<'a>> Storage<'a, T> {
 		store_item::<u8, T, _>(
 			&mut self.flash,
 			self.flash_range.clone(),
-			&mut NoCache::new(),
+			&mut self.cache,
 			&mut self.data_buffer,
 			&self.search_key,
 			value,

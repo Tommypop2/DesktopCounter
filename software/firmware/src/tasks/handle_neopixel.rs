@@ -15,7 +15,7 @@ use smart_leds::{
 use strum::IntoStaticStr;
 
 use crate::{
-	maths::{sin, FibonacciWrapped},
+	maths::{FibonacciWrapped, sin},
 	menustate::{RgbBrightness, RgbRate},
 };
 
@@ -28,7 +28,8 @@ pub enum RgbMode {
 	Static(RGB8),
 }
 pub static RGB_MODE: Mutex<CriticalSectionRawMutex, RgbMode> = Mutex::new(RgbMode::SineCycle(0.01));
-pub static RGB_BRIGHTNESS: Mutex<CriticalSectionRawMutex, RgbBrightness> = Mutex::new(RgbBrightness::Low);
+pub static RGB_BRIGHTNESS: Mutex<CriticalSectionRawMutex, RgbBrightness> =
+	Mutex::new(RgbBrightness::Low);
 pub static RGB_RATE_MULTIPLIER: Mutex<CriticalSectionRawMutex, RgbRate> =
 	Mutex::new(RgbRate::Moderate);
 #[embassy_executor::task]
