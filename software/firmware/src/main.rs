@@ -8,6 +8,7 @@ use crate::tasks::handle_button::{BUTTON_STATE, ButtonEvent, handle_button};
 use crate::tasks::handle_neopixel::{RGB_CONFIG, RGB_CONFIG_UPDATED, handle_neopixel};
 use crate::tasks::handle_storage::handle_storage;
 use embassy_futures::select::Either;
+use embassy_futures::yield_now;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
 use embedded_graphics::Drawable;
@@ -71,7 +72,13 @@ async fn main(spawner: embassy_executor::Spawner) {
 	let interface = I2CDisplayInterface::new(i2c);
 	let mut display = Ssd1306Async::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)
 		.into_buffered_graphics_mode();
-	display.init().await.unwrap();
+	if let Err(e) = display.init().await {
+		esp_println::println!("Error: {:?}", e);
+		esp_println::println!("Display couldn't be initialised");
+		loop {
+			yield_now().await;
+		}
+	}
 	let text_style = MonoTextStyleBuilder::new()
 		.font(&FONT_10X20)
 		.text_color(BinaryColor::On)
