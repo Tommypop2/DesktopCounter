@@ -58,7 +58,7 @@ async fn handle_config_storage(flash: &Mutex<CriticalSectionRawMutex, FlashRegio
 	let mut stored_config = stored_config;
 	let mut rcv = RGB_CONFIG_UPDATED.receiver().unwrap();
 	loop {
-		match select(pin!(rcv.changed()), Timer::after_secs(2)).await {
+		match select(pin!(rcv.changed()), Timer::after_secs(5)).await {
 			// Config changes before timer completes
 			Either::Left((_, _timer)) => new_config = Some(RGB_CONFIG.lock().await.clone()),
 			// Timer completes before config changes, so save
