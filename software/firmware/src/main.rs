@@ -166,6 +166,7 @@ async fn main(spawner: embassy_executor::Spawner) {
 										rgb_config.set_rate(rate);
 									}
 									MenuResult::ResetOptions(o) => {
+										drop(rgb_config);
 										reset(o).await;
 									}
 								}
